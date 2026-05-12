@@ -1,11 +1,15 @@
 const express = require("express");
 const cors = require("cors");
 const pool = require("./config/db");
+const quartosRoutes = require("./routes/quartosRoutes");
+const hospedesRoutes = require("./routes/hospedesRoutes");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/quartos", quartosRoutes);
+app.use("/hospedes", hospedesRoutes);
 
 app.get("/", (req, res) => {
     res.send("Servidor do Hotel TCC funcionando!");
