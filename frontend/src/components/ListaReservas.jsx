@@ -29,6 +29,52 @@ function obterClasseSituacao(situacao) {
   return `situacao-${situacaoNormalizada || 'padrao'}`
 }
 
+function IconeReserva({ tipo }) {
+  const icones = {
+    busca: (
+      <>
+        <path d="m21 21-4.3-4.3" />
+        <circle cx="11" cy="11" r="7" />
+      </>
+    ),
+    filtro: (
+      <>
+        <path d="M4 5h16" />
+        <path d="M7 12h10" />
+        <path d="M10 19h4" />
+      </>
+    ),
+    adicionar: (
+      <>
+        <path d="M12 5v14" />
+        <path d="M5 12h14" />
+      </>
+    ),
+    abrir: (
+      <>
+        <path d="M15 3h6v6" />
+        <path d="M10 14 21 3" />
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      </>
+    ),
+    excluir: (
+      <>
+        <path d="M3 6h18" />
+        <path d="M8 6V4h8v2" />
+        <path d="M19 6 18 20H6L5 6" />
+        <path d="M10 11v5" />
+        <path d="M14 11v5" />
+      </>
+    ),
+  }
+
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      {icones[tipo]}
+    </svg>
+  )
+}
+
 function ListaReservas({
   reservas,
   onNovaReserva,
@@ -69,7 +115,9 @@ function ListaReservas({
 
       <div className="reservas-toolbar">
         <label className="campo-busca-reservas">
-          <span aria-hidden="true">?</span>
+          <span aria-hidden="true">
+            <IconeReserva tipo="busca" />
+          </span>
           <input
             value={busca}
             onChange={(evento) => setBusca(evento.target.value)}
@@ -82,11 +130,12 @@ function ListaReservas({
           className="botao-filtro-reservas"
           title="Filtrar reservas"
         >
-          <span aria-hidden="true">v</span>
+          <IconeReserva tipo="filtro" />
         </button>
 
-        <button type="button" onClick={onNovaReserva}>
-          + Nova reserva
+        <button type="button" className="botao-com-icone" onClick={onNovaReserva}>
+          <IconeReserva tipo="adicionar" />
+          Nova reserva
         </button>
       </div>
 
@@ -185,16 +234,18 @@ function ListaReservas({
                     <div className="acoes-tabela-reservas">
                       <button
                         type="button"
-                        className="botao-pequeno"
+                        className="botao-pequeno botao-com-icone"
                         onClick={() => onVisualizarReserva(reserva)}
                       >
+                        <IconeReserva tipo="abrir" />
                         Ver
                       </button>
                       <button
                         type="button"
-                        className="botao-excluir botao-pequeno"
+                        className="botao-excluir botao-pequeno botao-com-icone"
                         onClick={() => onExcluir(reserva)}
                       >
+                        <IconeReserva tipo="excluir" />
                         Excluir
                       </button>
                     </div>

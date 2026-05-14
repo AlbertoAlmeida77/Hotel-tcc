@@ -244,6 +244,16 @@ function DashboardQuartos({
           )
           const estaOcupado = status === 'ocupado' && reserva
           const estaDisponivel = status === 'disponivel'
+          const observacao = reserva?.observacao || quarto.descricao || ''
+          const periodoReserva = reserva
+            ? `${formatarData(reserva.data_entrada)} - ${formatarData(
+                reserva.data_saida,
+              )}`
+            : ''
+          const textoVazio =
+            status === 'disponivel'
+              ? 'Quarto livre para nova hospedagem.'
+              : 'Sem informacoes adicionais no momento.'
 
           return (
             <article
@@ -256,29 +266,31 @@ function DashboardQuartos({
               </header>
 
               <div className="card-quarto-corpo">
-                <p className="observacao-quarto">
-                  {reserva?.observacao || quarto.descricao || ''}
-                </p>
+                {observacao && (
+                  <p className="observacao-quarto">{observacao}</p>
+                )}
 
-                <div className="linha-card-quarto">
-                  <span className="icone-card" aria-hidden="true">
-                    i
-                  </span>
-                  <strong>{reserva?.nome_hospede || ''}</strong>
-                </div>
+                {reserva?.nome_hospede && (
+                  <div className="linha-card-quarto">
+                    <span className="icone-card" aria-hidden="true">
+                      i
+                    </span>
+                    <strong>{reserva.nome_hospede}</strong>
+                  </div>
+                )}
 
-                <div className="linha-card-quarto periodo-card">
-                  <span className="icone-card" aria-hidden="true">
-                    #
-                  </span>
-                  <strong>
-                    {reserva
-                      ? `${formatarData(reserva.data_entrada)} - ${formatarData(
-                          reserva.data_saida,
-                        )}`
-                      : ''}
-                  </strong>
-                </div>
+                {periodoReserva && (
+                  <div className="linha-card-quarto periodo-card">
+                    <span className="icone-card" aria-hidden="true">
+                      #
+                    </span>
+                    <strong>{periodoReserva}</strong>
+                  </div>
+                )}
+
+                {!observacao && !reserva?.nome_hospede && !periodoReserva && (
+                  <p className="card-quarto-vazio">{textoVazio}</p>
+                )}
               </div>
 
               <footer className="card-quarto-rodape">

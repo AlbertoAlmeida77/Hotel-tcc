@@ -82,6 +82,35 @@ const textosPaginas = {
   },
 }
 
+function IconeAcao({ tipo }) {
+  const icones = {
+    adicionar: (
+      <>
+        <path d="M12 5v14" />
+        <path d="M5 12h14" />
+      </>
+    ),
+    voltar: (
+      <>
+        <path d="M19 12H5" />
+        <path d="m12 19-7-7 7-7" />
+      </>
+    ),
+    fechar: (
+      <>
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+      </>
+    ),
+  }
+
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      {icones[tipo]}
+    </svg>
+  )
+}
+
 function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
   const [quartos, setQuartos] = useState([])
   const [hospedes, setHospedes] = useState([])
@@ -932,16 +961,19 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
                 {modoQuartos === 'lista' ? (
                   <button
                     type="button"
+                    className="botao-com-icone"
                     onClick={abrirCadastroQuarto}
                   >
+                    <IconeAcao tipo="adicionar" />
                     Novo quarto
                   </button>
                 ) : (
                   <button
                     type="button"
-                    className="botao-secundario"
+                    className="botao-secundario botao-com-icone"
                     onClick={cancelarEdicaoQuarto}
                   >
+                    <IconeAcao tipo="voltar" />
                     Voltar para lista
                   </button>
                 )}
@@ -974,16 +1006,19 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
                 {modoHospedes === 'lista' ? (
                   <button
                     type="button"
+                    className="botao-com-icone"
                     onClick={abrirCadastroHospede}
                   >
+                    <IconeAcao tipo="adicionar" />
                     Novo hospede
                   </button>
                 ) : (
                   <button
                     type="button"
-                    className="botao-secundario"
+                    className="botao-secundario botao-com-icone"
                     onClick={fecharFormularioHospede}
                   >
+                    <IconeAcao tipo="voltar" />
                     Voltar para lista
                   </button>
                 )}
@@ -1009,9 +1044,10 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
                     </div>
                     <button
                       type="button"
-                      className="botao-secundario"
+                      className="botao-secundario botao-com-icone"
                       onClick={fecharFormularioHospede}
                     >
+                      <IconeAcao tipo="fechar" />
                       Fechar
                     </button>
                   </div>

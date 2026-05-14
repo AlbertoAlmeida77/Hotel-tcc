@@ -3,15 +3,31 @@
 }
 
 :root {
-  font-family: Arial, Helvetica, sans-serif;
-  color: #1f2937;
-  background: #f5f7fb;
+  font-family: "Aptos", "Segoe UI", sans-serif;
+  color: #24211d;
+  background: #f4efe6;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  min-width: 320px;
+  background:
+    linear-gradient(115deg, rgba(35, 69, 72, 0.1), transparent 35%),
+    #f4efe6;
+}
+
 body {
+  min-width: 320px;
+  min-height: 100vh;
   margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
