@@ -202,19 +202,10 @@ export async function atualizarReservaNoServidor(reserva) {
 }
 
 export async function atualizarStatusQuartoNoServidor(quarto, novoStatus) {
-  const resposta = await fetchComTimeout(`${API_URL}/quartos/${quarto.id_quarto}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      numero: quarto.numero,
-      tipo: quarto.tipo,
-      capacidade: Number(quarto.capacidade),
-      valor_diaria: Number(quarto.valor_diaria),
-      status: novoStatus,
-      descricao: quarto.descricao || null,
-    }),
+  const resposta = await fetchComTimeout(`${API_URL}/quartos/${quarto.id_quarto}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: novoStatus }),
   })
 
   const dados = await resposta.json()
@@ -260,6 +251,47 @@ export async function excluirReservaNoServidor(idReserva) {
 
   if (!resposta.ok) {
     throw new Error(dados.mensagem || 'Erro ao excluir reserva.')
+  }
+
+  return dados
+}
+
+export async function atualizarSituacaoReservaNoServidor(idReserva, situacao) {
+  const resposta = await fetchComTimeout(`${API_URL}/reservas/${idReserva}/situacao`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ situacao }),
+  })
+
+  const dados = await resposta.json()
+
+  if (!resposta.ok) {
+    throw new Error(dados.mensagem || 'Erro ao atualizar situacao da reserva.')
+  }
+
+  return dados
+}
+
+export async function buscarQuartosDisponiveis(dataEntrada, dataSaida) {
+  const params = new URLSearchParams({ data_entrada: dataEntrada, data_saida: dataSaida })
+  const resposta = await fetchComTimeout(`${API_URL}/quartos/disponiveis?${params}`)
+
+  const dados = await resposta.json()
+
+  if (!resposta.ok) {
+    throw new Error(dados.mensagem || 'Erro ao buscar quartos disponiveis.')
+  }
+
+  return dados
+}
+
+export async function buscarDashboard() {
+  const resposta = await fetchComTimeout(`${API_URL}/dashboard`)
+
+  const dados = await resposta.json()
+
+  if (!resposta.ok) {
+    throw new Error(dados.mensagem || 'Erro ao buscar dados do dashboard.')
   }
 
   return dados

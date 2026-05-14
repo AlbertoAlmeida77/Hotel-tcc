@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { formatarData } from '../services/financeiro'
 
 const indicadoresFixos = [
-  { chave: 'todos', texto: 'todos', cor: 'neutro' },
-  { chave: 'disponivel', texto: 'disponivel', cor: 'disponivel' },
-  { chave: 'ocupado', texto: 'ocupado', cor: 'ocupado' },
-  { chave: 'em-limpeza', texto: 'em limpeza', cor: 'limpeza' },
-  { chave: 'bloqueado', texto: 'bloqueado', cor: 'bloqueado' },
+  { chave: 'todos', texto: 'Todos', cor: 'neutro' },
+  { chave: 'disponivel', texto: 'Disponível', cor: 'disponivel' },
+  { chave: 'ocupado', texto: 'Ocupado', cor: 'ocupado' },
+  { chave: 'em-limpeza', texto: 'Em limpeza', cor: 'limpeza' },
+  { chave: 'bloqueado', texto: 'Bloqueado', cor: 'bloqueado' },
 ]
 
 function normalizarStatus(status) {
@@ -139,7 +139,7 @@ function obterEstadoDoQuarto(quarto, reservas, agora) {
 
   return {
     status: 'disponivel',
-    textoStatus: 'Disponivel',
+    textoStatus: 'Disponível',
     reserva: null,
   }
 }
@@ -212,7 +212,7 @@ function DashboardQuartos({
         <div>
           <span className="etiqueta-dashboard">Bem-vindo</span>
           <h2>Hotel Auto Posto Itaguari</h2>
-          <p>Sistema de gestao de quartos, reservas e hospedes.</p>
+          <p>Sistema de gestão de quartos, reservas e hóspedes.</p>
         </div>
       </section>
 
@@ -253,7 +253,7 @@ function DashboardQuartos({
           const textoVazio =
             status === 'disponivel'
               ? 'Quarto livre para nova hospedagem.'
-              : 'Sem informacoes adicionais no momento.'
+              : 'Sem informações adicionais no momento.'
 
           return (
             <article
@@ -273,7 +273,7 @@ function DashboardQuartos({
                 {reserva?.nome_hospede && (
                   <div className="linha-card-quarto">
                     <span className="icone-card" aria-hidden="true">
-                      i
+                      <IconeHospede />
                     </span>
                     <strong>{reserva.nome_hospede}</strong>
                   </div>
@@ -282,7 +282,7 @@ function DashboardQuartos({
                 {periodoReserva && (
                   <div className="linha-card-quarto periodo-card">
                     <span className="icone-card" aria-hidden="true">
-                      #
+                      <IconeReserva />
                     </span>
                     <strong>{periodoReserva}</strong>
                   </div>
@@ -320,8 +320,8 @@ function DashboardQuartos({
                 <button
                   type="button"
                   className="botao-icone-card"
-                  title="Editar informacoes do hospede"
-                  aria-label="Editar informacoes do hospede"
+                  title="Editar informações do hóspede"
+                  aria-label="Editar informações do hóspede"
                   disabled={!hospede}
                   onClick={() => onEditarHospede(hospede)}
                 >

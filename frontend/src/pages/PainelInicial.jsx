@@ -62,22 +62,22 @@ const reservaVazia = {
 const textosPaginas = {
   painel: {
     titulo: 'Painel inicial',
-    descricao: 'Veja os quartos e hospedes cadastrados no banco de dados.',
+    descricao: 'Veja os quartos e hóspedes cadastrados no banco de dados.',
   },
   quartos: {
     titulo: 'Quartos',
     descricao: 'Cadastre quartos e acompanhe a lista de quartos do hotel.',
   },
   hospedes: {
-    titulo: 'Hospedes',
-    descricao: 'Consulte os hospedes cadastrados no sistema.',
+    titulo: 'Hóspedes',
+    descricao: 'Consulte os hóspedes cadastrados no sistema.',
   },
   reservas: {
     titulo: 'Reservas',
-    descricao: 'Area reservada para o controle de reservas do hotel.',
+    descricao: 'Área reservada para o controle de reservas do hotel.',
   },
   transacoes: {
-    titulo: 'Transacoes',
+    titulo: 'Transações',
     descricao: 'Controle os pagamentos e valores das hospedagens.',
   },
 }
@@ -939,7 +939,20 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
 
       {erro && <p className="aviso erro">{erro}</p>}
       {mensagemQuarto && <p className="aviso sucesso">{mensagemQuarto}</p>}
-      {carregando && <p className="aviso">Carregando dados...</p>}
+
+      {carregando && paginaAtual === 'painel' && (
+        <section className="conteudo">
+          <div className="skeleton skeleton-card" style={{ borderRadius: 'var(--radius)', minHeight: '230px' }} />
+          <div className="grade-quartos-dashboard">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="skeleton skeleton-card" />
+            ))}
+          </div>
+        </section>
+      )}
+      {carregando && paginaAtual !== 'painel' && (
+        <p className="aviso">Carregando dados...</p>
+      )}
 
       {!carregando && (
         <section className="conteudo">

@@ -2,7 +2,22 @@ const pool = require("../config/db");
 
 async function listarHospedes(req, res) {
     try {
-        const [hospedes] = await pool.query("SELECT * FROM hospedes ORDER BY nome");
+        const { busca, cpf } = req.query;
+        let sql = "SELECT * FROM hospedes";
+        const valores = [];
+
+        if (cpf) {
+            sql += " WHERE cpf = ?";
+            valores.push(cpf);
+        } else if (busca) {
+            sql += " WHERE nome LIKE ? OR cpf LIKE ?";
+            const termo = `%${busca}%`;
+            valores.push(termo, termo);
+        }
+
+        sql += " ORDER BY nome";
+
+        const [hospedes] = await pool.query(sql, valores);
         res.json(hospedes);
     } catch (erro) {
         res.status(500).json({
@@ -29,14 +44,7 @@ async function cadastrarHospede(req, res) {
                 (?, ?, ?, ?, ?, ?)
         `;
 
-        const valores = [
-            nome,
-            cpf,
-            telefone,
-            email,
-            endereco || null,
-            observacoes || null
-        ];
+        const valores = [nome, cpf, telefone, email, endereco || null, observacoes || null];
 
         const [resultado] = await pool.query(sql, valores);
 
@@ -62,9 +70,7 @@ async function buscarHospedePorId(req, res) {
         );
 
         if (hospedes.length === 0) {
-            return res.status(404).json({
-                mensagem: "Hospede nao encontrado"
-            });
+            return res.status(404).json({ mensagem: "Hospede nao encontrado" });
         }
 
         res.json(hospedes[0]);
@@ -90,36 +96,24 @@ async function atualizarHospede(req, res) {
         const sql = `
             UPDATE hospedes
             SET
-                nome = ?,
-                cpf = ?,
-                telefone = ?,
-                email = ?,
-                endereco = ?,
+                nome        = ?,
+                cpf         = ?,
+                telefone    = ?,
+                email       = ?,
+                endereco    = ?,
                 observacoes = ?
             WHERE id_hospede = ?
         `;
 
-        const valores = [
-            nome,
-            cpf,
-            telefone,
-            email,
-            endereco || null,
-            observacoes || null,
-            id
-        ];
+        const valores = [nome, cpf, telefone, email, endereco || null, observacoes || null, id];
 
         const [resultado] = await pool.query(sql, valores);
 
         if (resultado.affectedRows === 0) {
-            return res.status(404).json({
-                mensagem: "Hospede nao encontrado"
-            });
+            return res.status(404).json({ mensagem: "Hospede nao encontrado" });
         }
 
-        res.json({
-            mensagem: "Hospede atualizado com sucesso"
-        });
+        res.json({ mensagem: "Hospede atualizado com sucesso" });
     } catch (erro) {
         res.status(500).json({
             mensagem: "Erro ao atualizar hospede",
@@ -138,14 +132,10 @@ async function excluirHospede(req, res) {
         );
 
         if (resultado.affectedRows === 0) {
-            return res.status(404).json({
-                mensagem: "Hospede nao encontrado"
-            });
+            return res.status(404).json({ mensagem: "Hospede nao encontrado" });
         }
 
-        res.json({
-            mensagem: "Hospede excluido com sucesso"
-        });
+        res.json({ mensagem: "Hospede excluido com sucesso" });
     } catch (erro) {
         res.status(500).json({
             mensagem: "Erro ao excluir hospede",

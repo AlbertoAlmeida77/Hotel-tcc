@@ -125,13 +125,6 @@ function ListaReservas({
           />
         </label>
 
-        <button
-          type="button"
-          className="botao-filtro-reservas"
-          title="Filtrar reservas"
-        >
-          <IconeReserva tipo="filtro" />
-        </button>
 
         <button type="button" className="botao-com-icone" onClick={onNovaReserva}>
           <IconeReserva tipo="adicionar" />
@@ -163,11 +156,7 @@ function ListaReservas({
             <span>{reservasFiltradas.length} exibidas</span>
           </div>
 
-          <div className="reservas-cabecalho-acoes" aria-hidden="true">
-            <span>↓</span>
-            <span>-</span>
-            <span>□</span>
-          </div>
+
         </div>
 
         <div className="tabela-reservas-wrap">

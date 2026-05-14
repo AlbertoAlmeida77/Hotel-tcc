@@ -3,9 +3,9 @@ import { rotas } from '../services/rotas'
 const itensMenu = [
   { id: 'painel', nome: 'Painel', icone: 'painel' },
   { id: 'quartos', nome: 'Quartos', icone: 'quartos' },
-  { id: 'hospedes', nome: 'Hospedes', icone: 'hospedes' },
+  { id: 'hospedes', nome: 'Hóspedes', icone: 'hospedes' },
   { id: 'reservas', nome: 'Reservas', icone: 'reservas' },
-  { id: 'transacoes', nome: 'Transacoes', icone: 'transacoes' },
+  { id: 'transacoes', nome: 'Transações', icone: 'transacoes' },
 ]
 
 function IconeMenu({ tipo }) {
@@ -72,7 +72,7 @@ function MenuLateral({ paginaAtual, onMudarPagina }) {
           H
         </span>
         <strong>Hotel API</strong>
-        <span>Gerenciamento</span>
+        <span>Gerenciamento Hoteleiro</span>
       </div>
 
       <nav className="navegacao" aria-label="Menu principal">

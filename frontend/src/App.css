@@ -14,7 +14,7 @@
   --slate: #384148;
   --shadow: 0 22px 55px rgba(54, 42, 24, 0.13);
   --radius: 8px;
-  --display-font: "Aptos Display", "Segoe UI Variable Display", "Bahnschrift", "Segoe UI", sans-serif;
+  --display-font: "Inter", "Segoe UI", sans-serif;
 }
 
 .layout {
@@ -62,7 +62,7 @@
   border-radius: 50%;
   background: var(--green);
   color: #fffaf1;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--display-font);
   font-size: 25px;
   font-weight: 700;
   animation: softPulse 4s ease-in-out infinite;
@@ -612,6 +612,17 @@ button:hover svg {
   color: var(--gold);
   font-size: 12px;
   font-weight: 900;
+}
+
+.icone-card svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-linejoin: round;
 }
 
 .card-quarto-rodape {
@@ -1515,12 +1526,15 @@ textarea {
   }
 
   .menu-lateral {
-    position: static;
+    position: sticky;
+    top: 0;
+    z-index: 10;
     min-height: auto;
     gap: 16px;
     padding: 18px 20px;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+    box-shadow: 0 4px 16px rgba(54, 42, 24, 0.1);
   }
 
   .marca {
@@ -1609,4 +1623,64 @@ textarea {
   .hero-dashboard {
     padding: 24px;
   }
+}
+
+/* ============================================================
+   Skeleton Loader
+   ============================================================ */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--line) 25%,
+    var(--paper-strong) 50%,
+    var(--line) 75%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--radius);
+  animation: shimmer 1.4s infinite;
+}
+
+.skeleton-card {
+  min-height: 250px;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================================
+   Toast — mensagens de sucesso flutuantes
+   ============================================================ */
+.aviso.sucesso {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 30;
+  max-width: 400px;
+  margin: 0;
+  box-shadow:
+    0 16px 40px rgba(54, 42, 24, 0.18),
+    0 4px 12px rgba(54, 42, 24, 0.1);
+  animation: toastIn 0.34s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================================
+   Empty state — tabela sem registros
+   ============================================================ */
+.tabela-vazia td {
+  padding: 56px 24px;
+  color: var(--muted);
+  font-size: 15px;
 }

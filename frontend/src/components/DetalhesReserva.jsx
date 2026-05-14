@@ -133,12 +133,12 @@ function DetalhesReserva({
 
             <div className="campos reserva-detalhes-campos">
               <label>
-                Situacao
+                Situação
                 <input value={reserva.situacao} disabled />
               </label>
 
               <label>
-                Hospede
+                Hóspede
                 <select
                   name="id_hospede"
                   value={formulario.id_hospede}
@@ -186,7 +186,7 @@ function DetalhesReserva({
               </label>
 
               <label>
-                Saida
+                Saída
                 <input
                   type="date"
                   name="data_saida"
@@ -198,7 +198,7 @@ function DetalhesReserva({
               </label>
 
               <label>
-                Valor da diaria
+                Valor da diária
                 <input
                   type="number"
                   name="valor_diaria"
@@ -237,7 +237,7 @@ function DetalhesReserva({
               </label>
 
               <label className="switch-campo">
-                Cafe da manha
+                Café da manhã
                 <input
                   type="checkbox"
                   name="cafe_manha"
@@ -248,7 +248,7 @@ function DetalhesReserva({
               </label>
 
               <label className="campo-largo">
-                Observacao
+                Observação
                 <textarea
                   name="observacao"
                   value={formulario.observacao}
@@ -316,22 +316,21 @@ function DetalhesReserva({
 
         <aside className="resumo-reserva">
           <div className="painel resumo-destaque">
-            <span>Falta lancar</span>
+            <span>Falta lançar</span>
             <strong>{formatarMoeda(faltaLancar)}</strong>
           </div>
 
           <div className="painel resumo-tabela">
             <div className="painel-cabecalho">
-              <h2>Resumo</h2>
-              <span>-</span>
+              <h2>Resumo financeiro</h2>
             </div>
 
             <div className="linha-resumo">
-              <strong>No diarias</strong>
+              <strong>Nº de diárias</strong>
               <span>{diarias}</span>
             </div>
             <div className="linha-resumo">
-              <strong>Diaria media</strong>
+              <strong>Diária média</strong>
               <span>{formatarMoeda(valorDiaria)}</span>
             </div>
             <div className="linha-resumo">
