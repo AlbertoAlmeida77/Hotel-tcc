@@ -1,4 +1,4 @@
-function ListaQuartos({ quartos }) {
+function ListaQuartos({ quartos, onEditar, onExcluir }) {
   return (
     <div className="painel">
       <div className="painel-cabecalho">
@@ -21,6 +21,23 @@ function ListaQuartos({ quartos }) {
               <span>{quarto.capacidade} pessoa(s)</span>
               <span>R$ {Number(quarto.valor_diaria).toFixed(2)}</span>
               <span className="status">{quarto.status}</span>
+            </div>
+
+            <div className="acoes-item">
+              <button
+                type="button"
+                className="botao-pequeno"
+                onClick={() => onEditar(quarto)}
+              >
+                Editar
+              </button>
+              <button
+                type="button"
+                className="botao-excluir botao-pequeno"
+                onClick={() => onExcluir(quarto)}
+              >
+                Excluir
+              </button>
             </div>
           </article>
         ))}

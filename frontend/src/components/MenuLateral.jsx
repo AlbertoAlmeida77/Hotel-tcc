@@ -5,6 +5,7 @@ const itensMenu = [
   { id: 'quartos', nome: 'Quartos' },
   { id: 'hospedes', nome: 'Hospedes' },
   { id: 'reservas', nome: 'Reservas' },
+  { id: 'transacoes', nome: 'Transacoes' },
 ]
 
 function MenuLateral({ paginaAtual, onMudarPagina }) {

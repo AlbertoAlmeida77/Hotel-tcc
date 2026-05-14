@@ -12,6 +12,7 @@ function FormularioReserva({
   salvandoReserva,
   onAtualizarCampo,
   onAdicionarReserva,
+  onAbrirNovoHospede,
   onCancelar,
 }) {
   return (
@@ -51,22 +52,33 @@ function FormularioReserva({
 
         <div className="grupo-formulario">
           <div className="campos reserva-campos">
-            <label>
-              Hospede
-              <select
-                name="id_hospede"
-                value={reserva.id_hospede}
-                onChange={onAtualizarCampo}
-                required
+            <div className="campo-com-acao">
+              <label>
+                Hospede
+                <select
+                  name="id_hospede"
+                  value={reserva.id_hospede}
+                  onChange={onAtualizarCampo}
+                  required
+                >
+                  <option value="">Selecione um hospede</option>
+                  {hospedes.map((hospede) => (
+                    <option value={hospede.id_hospede} key={hospede.id_hospede}>
+                      {hospede.nome} - {hospede.cpf}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className="botao-icone botao-adicionar-hospede"
+                title="Adicionar novo hospede"
+                aria-label="Adicionar novo hospede"
+                onClick={onAbrirNovoHospede}
               >
-                <option value="">Selecione um hospede</option>
-                {hospedes.map((hospede) => (
-                  <option value={hospede.id_hospede} key={hospede.id_hospede}>
-                    {hospede.nome} - {hospede.cpf}
-                  </option>
-                ))}
-              </select>
-            </label>
+                +
+              </button>
+            </div>
 
             <label>
               Quarto

@@ -1,4 +1,4 @@
-function ListaHospedes({ hospedes, onVisualizar, onEditar }) {
+function ListaHospedes({ hospedes, onVisualizar, onEditar, onExcluir }) {
   return (
     <div className="painel">
       <div className="painel-cabecalho">
@@ -36,6 +36,13 @@ function ListaHospedes({ hospedes, onVisualizar, onEditar }) {
                 onClick={() => onEditar(hospede)}
               >
                 Editar
+              </button>
+              <button
+                type="button"
+                className="botao-excluir botao-pequeno"
+                onClick={() => onExcluir(hospede)}
+              >
+                Excluir
               </button>
             </div>
           </article>

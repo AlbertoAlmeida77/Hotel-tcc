@@ -5,20 +5,32 @@ import { descobrirPaginaPelaUrl, rotas } from './services/rotas'
 import './App.css'
 
 function App() {
-  const [paginaAtual, setPaginaAtual] = useState(() =>
-    descobrirPaginaPelaUrl(window.location.pathname),
+  const [localizacaoAtual, setLocalizacaoAtual] = useState(() =>
+    `${window.location.pathname}${window.location.search}`,
   )
+  const paginaAtual = descobrirPaginaPelaUrl(window.location.pathname)
 
-  function navegarPara(pagina) {
+  function navegarPara(pagina, parametros = {}) {
     const novaUrl = rotas[pagina]
+    const busca = new URLSearchParams()
 
-    window.history.pushState(null, '', novaUrl)
-    setPaginaAtual(pagina)
+    Object.entries(parametros).forEach(([chave, valor]) => {
+      if (valor !== undefined && valor !== null && valor !== '') {
+        busca.set(chave, valor)
+      }
+    })
+
+    const urlCompleta = busca.toString()
+      ? `${novaUrl}?${busca.toString()}`
+      : novaUrl
+
+    window.history.pushState(null, '', urlCompleta)
+    setLocalizacaoAtual(`${window.location.pathname}${window.location.search}`)
   }
 
   useEffect(() => {
     function voltarOuAvancarNoNavegador() {
-      setPaginaAtual(descobrirPaginaPelaUrl(window.location.pathname))
+      setLocalizacaoAtual(`${window.location.pathname}${window.location.search}`)
     }
 
     window.addEventListener('popstate', voltarOuAvancarNoNavegador)
@@ -35,7 +47,11 @@ function App() {
         onMudarPagina={navegarPara}
       />
 
-      <PainelInicial paginaAtual={paginaAtual} />
+      <PainelInicial
+        paginaAtual={paginaAtual}
+        localizacaoAtual={localizacaoAtual}
+        onMudarPagina={navegarPara}
+      />
     </div>
   )
 }

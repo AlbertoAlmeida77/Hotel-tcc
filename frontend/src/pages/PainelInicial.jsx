@@ -7,14 +7,26 @@ import FormularioReserva from '../components/FormularioReserva'
 import ListaHospedes from '../components/ListaHospedes'
 import ListaQuartos from '../components/ListaQuartos'
 import ListaReservas from '../components/ListaReservas'
+import ModalHospedeReserva from '../components/ModalHospedeReserva'
+import ModalPagamento from '../components/ModalPagamento'
+import Transacoes from '../components/Transacoes'
 import {
+  atualizarQuartoNoServidor,
+  atualizarReservaNoServidor,
   atualizarStatusQuartoNoServidor,
   atualizarHospedeNoServidor,
   buscarDadosDoServidor,
   cadastrarHospedeNoServidor,
   cadastrarQuartoNoServidor,
   cadastrarReservaNoServidor,
+  excluirHospedeNoServidor,
+  excluirQuartoNoServidor,
+  excluirReservaNoServidor,
 } from '../services/api'
+import {
+  calcularTotalReserva,
+  criarPagamentoDaReserva,
+} from '../services/financeiro'
 
 const quartoVazio = {
   numero: '',
@@ -64,9 +76,13 @@ const textosPaginas = {
     titulo: 'Reservas',
     descricao: 'Area reservada para o controle de reservas do hotel.',
   },
+  transacoes: {
+    titulo: 'Transacoes',
+    descricao: 'Controle os pagamentos e valores das hospedagens.',
+  },
 }
 
-function PainelInicial({ paginaAtual }) {
+function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
   const [quartos, setQuartos] = useState([])
   const [hospedes, setHospedes] = useState([])
   const [reservas, setReservas] = useState([])
@@ -77,15 +93,27 @@ function PainelInicial({ paginaAtual }) {
   const [salvandoReserva, setSalvandoReserva] = useState(false)
   const [mensagemQuarto, setMensagemQuarto] = useState('')
   const [novoQuarto, setNovoQuarto] = useState(quartoVazio)
+  const [modoQuartos, setModoQuartos] = useState('lista')
+  const [modoFormularioQuarto, setModoFormularioQuarto] = useState('cadastrar')
   const [novoHospede, setNovoHospede] = useState(hospedeVazio)
   const [novaReserva, setNovaReserva] = useState(reservaVazia)
   const [reservaSelecionada, setReservaSelecionada] = useState(null)
+  const [pagamentos, setPagamentos] = useState(() => {
+    const pagamentosSalvos = localStorage.getItem('hotel-tcc-pagamentos')
+
+    return pagamentosSalvos ? JSON.parse(pagamentosSalvos) : []
+  })
+  const [reservaPagamento, setReservaPagamento] = useState(null)
+  const [pagamentoAtual, setPagamentoAtual] = useState(null)
+  const [modalHospedeReservaAberto, setModalHospedeReservaAberto] =
+    useState(false)
+  const [hospedeRapido, setHospedeRapido] = useState(hospedeVazio)
+  const [salvandoHospedeRapido, setSalvandoHospedeRapido] = useState(false)
   const [modoReservas, setModoReservas] = useState('lista')
   const [hospedeSelecionado, setHospedeSelecionado] = useState(null)
+  const [modoHospedes, setModoHospedes] = useState('lista')
   const [modoFormularioHospede, setModoFormularioHospede] =
     useState('cadastrar')
-  const [mostrarFormularioHospede, setMostrarFormularioHospede] =
-    useState(false)
 
   async function carregarDados() {
     try {
@@ -129,6 +157,15 @@ function PainelInicial({ paginaAtual }) {
     }))
   }
 
+  function atualizarCampoHospedeRapido(evento) {
+    const { name, value } = evento.target
+
+    setHospedeRapido((hospedeAtual) => ({
+      ...hospedeAtual,
+      [name]: value,
+    }))
+  }
+
   function atualizarCampoReserva(evento) {
     const { checked, name, type, value } = evento.target
     const novoValor = type === 'checkbox' ? checked : value
@@ -161,16 +198,56 @@ function PainelInicial({ paginaAtual }) {
       setMensagemQuarto('')
       setErro('')
 
-      await cadastrarQuartoNoServidor(novoQuarto)
+      if (modoFormularioQuarto === 'editar') {
+        await atualizarQuartoNoServidor(novoQuarto)
+        mostrarMensagemQuarto('Quarto atualizado com sucesso.')
+      } else {
+        await cadastrarQuartoNoServidor(novoQuarto)
+        mostrarMensagemQuarto('Quarto cadastrado com sucesso.')
+      }
 
-      mostrarMensagemQuarto('Quarto cadastrado com sucesso.')
       setNovoQuarto(quartoVazio)
+      setModoFormularioQuarto('cadastrar')
+      setModoQuartos('lista')
+      onMudarPagina('quartos')
       carregarDados()
     } catch (erroAtual) {
       setErro(erroAtual.message)
     } finally {
       setSalvandoQuarto(false)
     }
+  }
+
+  function editarQuarto(quarto) {
+    setNovoQuarto({
+      id_quarto: quarto.id_quarto,
+      numero: quarto.numero || '',
+      tipo: quarto.tipo || '',
+      capacidade: quarto.capacidade || '',
+      valor_diaria: quarto.valor_diaria || '',
+      status: quarto.status || 'Disponivel',
+      descricao: quarto.descricao || '',
+    })
+    setModoFormularioQuarto('editar')
+    setModoQuartos('formulario')
+    onMudarPagina('quartos', {
+      modo: 'editar',
+      id: quarto.id_quarto,
+    })
+  }
+
+  function cancelarEdicaoQuarto() {
+    setNovoQuarto(quartoVazio)
+    setModoFormularioQuarto('cadastrar')
+    setModoQuartos('lista')
+    onMudarPagina('quartos')
+  }
+
+  function abrirCadastroQuarto() {
+    setNovoQuarto(quartoVazio)
+    setModoFormularioQuarto('cadastrar')
+    setModoQuartos('formulario')
+    onMudarPagina('quartos', { modo: 'novo' })
   }
 
   async function cadastrarHospede(evento) {
@@ -191,8 +268,9 @@ function PainelInicial({ paginaAtual }) {
 
       setNovoHospede(hospedeVazio)
       setModoFormularioHospede('cadastrar')
-      setMostrarFormularioHospede(false)
       setHospedeSelecionado(null)
+      setModoHospedes('lista')
+      onMudarPagina('hospedes')
       carregarDados()
     } catch (erroAtual) {
       setErro(erroAtual.message)
@@ -205,12 +283,17 @@ function PainelInicial({ paginaAtual }) {
     setNovoHospede(hospedeVazio)
     setHospedeSelecionado(null)
     setModoFormularioHospede('cadastrar')
-    setMostrarFormularioHospede(true)
+    setModoHospedes('formulario')
+    onMudarPagina('hospedes', { modo: 'novo' })
   }
 
   function visualizarHospede(hospede) {
     setHospedeSelecionado(hospede)
-    setMostrarFormularioHospede(false)
+    setModoHospedes('detalhes')
+    onMudarPagina('hospedes', {
+      modo: 'detalhes',
+      id: hospede.id_hospede,
+    })
   }
 
   function editarHospede(hospede) {
@@ -225,37 +308,112 @@ function PainelInicial({ paginaAtual }) {
     })
     setHospedeSelecionado(null)
     setModoFormularioHospede('editar')
-    setMostrarFormularioHospede(true)
+    setModoHospedes('formulario')
+    onMudarPagina('hospedes', {
+      modo: 'editar',
+      id: hospede.id_hospede,
+    })
+  }
+
+  function editarHospedePeloPainel(hospede) {
+    editarHospede(hospede)
   }
 
   function fecharFormularioHospede() {
     setNovoHospede(hospedeVazio)
     setModoFormularioHospede('cadastrar')
-    setMostrarFormularioHospede(false)
+    setHospedeSelecionado(null)
+    setModoHospedes('lista')
+    onMudarPagina('hospedes')
   }
 
-  async function alterarStatusQuarto(quarto, novoStatus) {
-    const statusAnterior = quarto.status
-
-    setQuartos((quartosAtuais) =>
-      quartosAtuais.map((quartoAtual) =>
-        quartoAtual.id_quarto === quarto.id_quarto
-          ? { ...quartoAtual, status: novoStatus }
-          : quartoAtual,
-      ),
+  async function excluirQuarto(quarto) {
+    const confirmou = window.confirm(
+      `Deseja excluir o quarto ${quarto.numero}?`,
     )
+
+    if (!confirmou) {
+      return
+    }
 
     try {
       setErro('')
-      await atualizarStatusQuartoNoServidor(quarto, novoStatus)
-    } catch (erroAtual) {
+      await excluirQuartoNoServidor(quarto.id_quarto)
       setQuartos((quartosAtuais) =>
-        quartosAtuais.map((quartoAtual) =>
-          quartoAtual.id_quarto === quarto.id_quarto
-            ? { ...quartoAtual, status: statusAnterior }
-            : quartoAtual,
+        quartosAtuais.filter(
+          (quartoAtual) => quartoAtual.id_quarto !== quarto.id_quarto,
         ),
       )
+      if (novoQuarto.id_quarto === quarto.id_quarto) {
+        cancelarEdicaoQuarto()
+      }
+      mostrarMensagemQuarto('Quarto excluido com sucesso.')
+    } catch (erroAtual) {
+      setErro(erroAtual.message)
+    }
+  }
+
+  async function excluirHospede(hospede) {
+    const confirmou = window.confirm(
+      `Deseja excluir o hospede ${hospede.nome}?`,
+    )
+
+    if (!confirmou) {
+      return
+    }
+
+    try {
+      setErro('')
+      await excluirHospedeNoServidor(hospede.id_hospede)
+      setHospedes((hospedesAtuais) =>
+        hospedesAtuais.filter(
+          (hospedeAtual) => hospedeAtual.id_hospede !== hospede.id_hospede,
+        ),
+      )
+
+      if (hospedeSelecionado?.id_hospede === hospede.id_hospede) {
+        setHospedeSelecionado(null)
+      }
+
+      mostrarMensagemQuarto('Hospede excluido com sucesso.')
+    } catch (erroAtual) {
+      setErro(erroAtual.message)
+    }
+  }
+
+  async function excluirReserva(reserva) {
+    const confirmou = window.confirm(
+      `Deseja excluir a reserva HO:${String(reserva.id_reserva).padStart(
+        6,
+        '0',
+      )}?`,
+    )
+
+    if (!confirmou) {
+      return
+    }
+
+    try {
+      setErro('')
+      await excluirReservaNoServidor(reserva.id_reserva)
+      setReservas((reservasAtuais) =>
+        reservasAtuais.filter(
+          (reservaAtual) => reservaAtual.id_reserva !== reserva.id_reserva,
+        ),
+      )
+      setPagamentos((pagamentosAtuais) =>
+        pagamentosAtuais.filter(
+          (pagamento) =>
+            Number(pagamento.id_reserva) !== Number(reserva.id_reserva),
+        ),
+      )
+
+      if (reservaSelecionada?.id_reserva === reserva.id_reserva) {
+        voltarParaListaReservas()
+      }
+
+      mostrarMensagemQuarto('Reserva excluida com sucesso.')
+    } catch (erroAtual) {
       setErro(erroAtual.message)
     }
   }
@@ -278,6 +436,12 @@ function PainelInicial({ paginaAtual }) {
       setReservaSelecionada(reservaCriada || null)
       setNovaReserva(reservaVazia)
       setModoReservas(reservaCriada ? 'detalhes' : 'lista')
+      onMudarPagina(
+        'reservas',
+        reservaCriada
+          ? { modo: 'detalhes', id: reservaCriada.id_reserva }
+          : {},
+      )
       mostrarMensagemQuarto('Reserva cadastrada com sucesso.')
     } catch (erroAtual) {
       setErro(erroAtual.message)
@@ -290,27 +454,289 @@ function PainelInicial({ paginaAtual }) {
     setNovaReserva(reservaVazia)
     setReservaSelecionada(null)
     setModoReservas('formulario')
+    onMudarPagina('reservas', { modo: 'nova' })
+  }
+
+  function abrirModalHospedeReserva() {
+    setHospedeRapido(hospedeVazio)
+    setModalHospedeReservaAberto(true)
+  }
+
+  function fecharModalHospedeReserva() {
+    setHospedeRapido(hospedeVazio)
+    setModalHospedeReservaAberto(false)
+  }
+
+  async function cadastrarHospedePelaReserva(evento) {
+    evento.preventDefault()
+
+    try {
+      setSalvandoHospedeRapido(true)
+      setErro('')
+
+      const resultado = await cadastrarHospedeNoServidor(hospedeRapido)
+      const dadosAtualizados = await buscarDadosDoServidor()
+
+      setHospedes(dadosAtualizados.hospedes)
+      setQuartos(dadosAtualizados.quartos)
+      setReservas(dadosAtualizados.reservas)
+      setNovaReserva((reservaAtual) => ({
+        ...reservaAtual,
+        id_hospede: String(resultado.id_hospede),
+      }))
+      fecharModalHospedeReserva()
+      mostrarMensagemQuarto('Hospede cadastrado e selecionado.')
+    } catch (erroAtual) {
+      setErro(erroAtual.message)
+    } finally {
+      setSalvandoHospedeRapido(false)
+    }
+  }
+
+  function criarHospedagemPeloPainel(quarto) {
+    setNovaReserva({
+      ...reservaVazia,
+      id_quarto: String(quarto.id_quarto),
+      valor_diaria: quarto.valor_diaria || '',
+      situacao: 'hospedar',
+    })
+    setReservaSelecionada(null)
+    setModoReservas('formulario')
+    onMudarPagina('reservas', {
+      modo: 'nova',
+      quarto: quarto.id_quarto,
+    })
+  }
+
+  function verHospedagemPeloPainel(reserva) {
+    setReservaSelecionada(reserva)
+    setModoReservas('detalhes')
+    onMudarPagina('reservas', {
+      modo: 'detalhes',
+      id: reserva.id_reserva,
+    })
   }
 
   function voltarParaListaReservas() {
     setReservaSelecionada(null)
     setModoReservas('lista')
+    onMudarPagina('reservas')
   }
 
-  function concluirHospedagem() {
+  function abrirPagamento(reserva) {
+    const totalReserva = calcularTotalReserva(reserva)
+    const recebido = pagamentos
+      .filter(
+        (pagamento) =>
+          Number(pagamento.id_reserva) === Number(reserva.id_reserva) &&
+          pagamento.concluido,
+      )
+      .reduce((total, pagamento) => total + Number(pagamento.valor || 0), 0)
+    const valorPendente = Math.max(totalReserva - recebido, 0)
+
+    setReservaPagamento(reserva)
+    setPagamentoAtual(criarPagamentoDaReserva(reserva, valorPendente))
+  }
+
+  function abrirCheckoutPeloPainel(reserva) {
+    setReservaSelecionada(reserva)
+    setModoReservas('detalhes')
+    onMudarPagina('reservas', {
+      modo: 'detalhes',
+      id: reserva.id_reserva,
+    })
+  }
+
+  function fecharPagamento() {
+    setReservaPagamento(null)
+    setPagamentoAtual(null)
+  }
+
+  function atualizarCampoPagamento(evento) {
+    const { checked, name, type, value } = evento.target
+
+    setPagamentoAtual((pagamento) => ({
+      ...pagamento,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+  }
+
+  function salvarPagamento(evento) {
+    evento.preventDefault()
+
+    const totalReserva = calcularTotalReserva(reservaPagamento)
+    const recebido = pagamentos
+      .filter(
+        (pagamento) =>
+          Number(pagamento.id_reserva) === Number(reservaPagamento.id_reserva) &&
+          pagamento.concluido,
+      )
+      .reduce((total, pagamento) => total + Number(pagamento.valor || 0), 0)
+    const valorPagamento = Number(pagamentoAtual.valor || 0)
+    const valorPendente = Math.max(totalReserva - recebido, 0)
+
+    if (valorPagamento > valorPendente) {
+      setErro(
+        `O pagamento nao pode ser maior que o valor pendente: R$ ${valorPendente.toFixed(2)}.`,
+      )
+      return
+    }
+
+    const novoPagamento = {
+      ...pagamentoAtual,
+      id: crypto.randomUUID(),
+      valor: valorPagamento,
+    }
+
+    setPagamentos((pagamentosAtuais) => [
+      novoPagamento,
+      ...pagamentosAtuais,
+    ])
+    fecharPagamento()
+    mostrarMensagemQuarto('Pagamento adicionado com sucesso.')
+  }
+
+  function excluirPagamento(pagamento) {
     const confirmou = window.confirm(
-      'Deseja confirmar a hospedagem desta reserva?',
+      `Deseja excluir o pagamento de R$ ${Number(pagamento.valor || 0).toFixed(2)}?`,
     )
 
     if (!confirmou) {
       return
     }
 
-    setReservaSelecionada(null)
-    setModoReservas('lista')
-    mostrarMensagemQuarto('Hospedagem concluida.')
+    setPagamentos((pagamentosAtuais) =>
+      pagamentosAtuais.filter(
+        (pagamentoAtual) => pagamentoAtual.id !== pagamento.id,
+      ),
+    )
+    mostrarMensagemQuarto('Pagamento excluido com sucesso.')
   }
 
+  async function finalizarCheckout(reserva) {
+    const quarto = quartos.find(
+      (quartoAtual) =>
+        Number(quartoAtual.id_quarto) === Number(reserva.id_quarto),
+    )
+
+    if (!quarto) {
+      setErro('Quarto da reserva nao encontrado.')
+      return
+    }
+
+    const confirmou = window.confirm(
+      `Confirmar checkout do quarto ${reserva.numero_quarto}?`,
+    )
+
+    if (!confirmou) {
+      return
+    }
+
+    try {
+      setErro('')
+      await atualizarReservaNoServidor({
+        ...reserva,
+        situacao: 'finalizado',
+      })
+      await atualizarStatusQuartoNoServidor(quarto, 'Disponivel')
+      const dadosAtualizados = await buscarDadosDoServidor()
+
+      setQuartos(dadosAtualizados.quartos)
+      setHospedes(dadosAtualizados.hospedes)
+      setReservas(dadosAtualizados.reservas)
+      setReservaSelecionada(null)
+      setModoReservas('lista')
+      onMudarPagina('reservas')
+      mostrarMensagemQuarto('Checkout finalizado com sucesso.')
+    } catch (erroAtual) {
+      setErro(erroAtual.message)
+    }
+  }
+
+  async function cancelarReserva(reserva) {
+    const confirmou = window.confirm(
+      `Deseja cancelar a reserva HO:${String(reserva.id_reserva).padStart(
+        6,
+        '0',
+      )}?`,
+    )
+
+    if (!confirmou) {
+      return
+    }
+
+    try {
+      setErro('')
+      await atualizarReservaNoServidor({
+        ...reserva,
+        situacao: 'cancelado',
+      })
+
+      const dadosAtualizados = await buscarDadosDoServidor()
+      const reservaAtualizada = dadosAtualizados.reservas.find(
+        (reservaAtual) =>
+          Number(reservaAtual.id_reserva) === Number(reserva.id_reserva),
+      )
+
+      setQuartos(dadosAtualizados.quartos)
+      setHospedes(dadosAtualizados.hospedes)
+      setReservas(dadosAtualizados.reservas)
+      setReservaSelecionada(reservaAtualizada || null)
+      mostrarMensagemQuarto('Reserva cancelada com sucesso.')
+    } catch (erroAtual) {
+      setErro(erroAtual.message)
+    }
+  }
+
+  async function salvarAlteracoesReserva(
+    reservaAtualizada,
+    opcoes = { voltarParaLista: true },
+  ) {
+    try {
+      setErro('')
+      await atualizarReservaNoServidor(reservaAtualizada)
+
+      const dadosAtualizados = await buscarDadosDoServidor()
+      const reservaSalva = dadosAtualizados.reservas.find(
+        (reserva) =>
+          Number(reserva.id_reserva) === Number(reservaAtualizada.id_reserva),
+      )
+
+      setQuartos(dadosAtualizados.quartos)
+      setHospedes(dadosAtualizados.hospedes)
+      setReservas(dadosAtualizados.reservas)
+      if (opcoes.voltarParaLista) {
+        setReservaSelecionada(null)
+        setModoReservas('lista')
+        onMudarPagina('reservas')
+      } else {
+        setReservaSelecionada(reservaSalva || null)
+      }
+      mostrarMensagemQuarto('Reserva atualizada com sucesso.')
+    } catch (erroAtual) {
+      setErro(erroAtual.message)
+    }
+  }
+
+  async function reabrirReserva(reserva) {
+    const confirmou = window.confirm(
+      `Deseja reabrir a reserva HO:${String(reserva.id_reserva).padStart(
+        6,
+        '0',
+      )}?`,
+    )
+
+    if (!confirmou) {
+      return
+    }
+
+    await salvarAlteracoesReserva({
+      ...reserva,
+      situacao: 'reservar',
+    }, { voltarParaLista: false })
+  }
+
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     let componenteExiste = true
 
@@ -338,6 +764,138 @@ function PainelInicial({ paginaAtual }) {
     }
   }, [])
 
+  useEffect(() => {
+    localStorage.setItem('hotel-tcc-pagamentos', JSON.stringify(pagamentos))
+  }, [pagamentos])
+
+  useEffect(() => {
+    const parametros = new URLSearchParams(localizacaoAtual.split('?')[1] || '')
+    const modo = parametros.get('modo')
+    const id = parametros.get('id')
+
+    if (paginaAtual === 'hospedes') {
+      if (modo === 'novo') {
+        setNovoHospede(hospedeVazio)
+        setHospedeSelecionado(null)
+        setModoFormularioHospede('cadastrar')
+        setModoHospedes('formulario')
+        return
+      }
+
+      if (modo === 'editar' && id) {
+        const hospede = hospedes.find(
+          (hospedeAtual) => Number(hospedeAtual.id_hospede) === Number(id),
+        )
+
+        if (hospede) {
+          setNovoHospede({
+            id_hospede: hospede.id_hospede,
+            nome: hospede.nome || '',
+            cpf: hospede.cpf || '',
+            telefone: hospede.telefone || '',
+            email: hospede.email || '',
+            endereco: hospede.endereco || '',
+            observacoes: hospede.observacoes || '',
+          })
+          setHospedeSelecionado(null)
+          setModoFormularioHospede('editar')
+          setModoHospedes('formulario')
+        }
+
+        return
+      }
+
+      if (modo === 'detalhes' && id) {
+        const hospede = hospedes.find(
+          (hospedeAtual) => Number(hospedeAtual.id_hospede) === Number(id),
+        )
+
+        if (hospede) {
+          setHospedeSelecionado(hospede)
+          setModoHospedes('detalhes')
+        }
+
+        return
+      }
+
+      setNovoHospede(hospedeVazio)
+      setHospedeSelecionado(null)
+      setModoFormularioHospede('cadastrar')
+      setModoHospedes('lista')
+    }
+
+    if (paginaAtual === 'quartos') {
+      if (modo === 'novo') {
+        setNovoQuarto(quartoVazio)
+        setModoFormularioQuarto('cadastrar')
+        setModoQuartos('formulario')
+        return
+      }
+
+      if (modo === 'editar' && id) {
+        const quarto = quartos.find(
+          (quartoAtual) => Number(quartoAtual.id_quarto) === Number(id),
+        )
+
+        if (quarto) {
+          setNovoQuarto({
+            id_quarto: quarto.id_quarto,
+            numero: quarto.numero || '',
+            tipo: quarto.tipo || '',
+            capacidade: quarto.capacidade || '',
+            valor_diaria: quarto.valor_diaria || '',
+            status: quarto.status || 'Disponivel',
+            descricao: quarto.descricao || '',
+          })
+          setModoFormularioQuarto('editar')
+          setModoQuartos('formulario')
+        }
+
+        return
+      }
+
+      setNovoQuarto(quartoVazio)
+      setModoFormularioQuarto('cadastrar')
+      setModoQuartos('lista')
+    }
+
+    if (paginaAtual === 'reservas') {
+      if (modo === 'nova') {
+        const idQuarto = parametros.get('quarto')
+        const quarto = quartos.find(
+          (quartoAtual) => Number(quartoAtual.id_quarto) === Number(idQuarto),
+        )
+
+        setNovaReserva({
+          ...reservaVazia,
+          id_quarto: quarto ? String(quarto.id_quarto) : '',
+          valor_diaria: quarto?.valor_diaria || '',
+          situacao: quarto ? 'hospedar' : reservaVazia.situacao,
+        })
+        setReservaSelecionada(null)
+        setModoReservas('formulario')
+        return
+      }
+
+      if (modo === 'detalhes' && id) {
+        const reserva = reservas.find(
+          (reservaAtual) => Number(reservaAtual.id_reserva) === Number(id),
+        )
+
+        if (reserva) {
+          setReservaSelecionada(reserva)
+          setModoReservas('detalhes')
+        }
+
+        return
+      }
+
+      setReservaSelecionada(null)
+      setModoReservas('lista')
+    }
+  }, [hospedes, localizacaoAtual, paginaAtual, quartos, reservas])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   const textoPagina = textosPaginas[paginaAtual]
 
   return (
@@ -359,35 +917,79 @@ function PainelInicial({ paginaAtual }) {
           {paginaAtual === 'painel' && (
             <DashboardQuartos
               quartos={quartos}
-              onAlterarStatus={alterarStatusQuarto}
+              hospedes={hospedes}
+              reservas={reservas}
+              onEditarHospede={editarHospedePeloPainel}
+              onCriarHospedagem={criarHospedagemPeloPainel}
+              onVerHospedagem={verHospedagemPeloPainel}
+              onAbrirCheckout={abrirCheckoutPeloPainel}
             />
           )}
 
           {paginaAtual === 'quartos' && (
             <>
-              <FormularioQuarto
-                novoQuarto={novoQuarto}
-                salvandoQuarto={salvandoQuarto}
-                onAtualizarCampo={atualizarCampoQuarto}
-                onCadastrarQuarto={cadastrarQuarto}
-              />
+              <div className="barra-acoes">
+                {modoQuartos === 'lista' ? (
+                  <button
+                    type="button"
+                    onClick={abrirCadastroQuarto}
+                  >
+                    Novo quarto
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="botao-secundario"
+                    onClick={cancelarEdicaoQuarto}
+                  >
+                    Voltar para lista
+                  </button>
+                )}
+              </div>
 
-              <ListaQuartos quartos={quartos} />
+              {modoQuartos === 'formulario' && (
+                <FormularioQuarto
+                  novoQuarto={novoQuarto}
+                  salvandoQuarto={salvandoQuarto}
+                  modo={modoFormularioQuarto}
+                  onAtualizarCampo={atualizarCampoQuarto}
+                  onCadastrarQuarto={cadastrarQuarto}
+                  onCancelar={cancelarEdicaoQuarto}
+                />
+              )}
+
+              {modoQuartos === 'lista' && (
+                <ListaQuartos
+                  quartos={quartos}
+                  onEditar={editarQuarto}
+                  onExcluir={excluirQuarto}
+                />
+              )}
             </>
           )}
 
           {paginaAtual === 'hospedes' && (
             <>
               <div className="barra-acoes">
-                <button
-                  type="button"
-                  onClick={abrirCadastroHospede}
-                >
-                  Novo hospede
-                </button>
+                {modoHospedes === 'lista' ? (
+                  <button
+                    type="button"
+                    onClick={abrirCadastroHospede}
+                  >
+                    Novo hospede
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="botao-secundario"
+                    onClick={fecharFormularioHospede}
+                  >
+                    Voltar para lista
+                  </button>
+                )}
               </div>
 
-              {mostrarFormularioHospede && (
+              {modoHospedes === 'formulario' && (
                 <FormularioHospede
                   novoHospede={novoHospede}
                   salvandoHospede={salvandoHospede}
@@ -398,7 +1000,7 @@ function PainelInicial({ paginaAtual }) {
                 />
               )}
 
-              {hospedeSelecionado && (
+              {modoHospedes === 'detalhes' && hospedeSelecionado && (
                 <div className="painel detalhes-hospede">
                   <div className="painel-cabecalho">
                     <div>
@@ -408,7 +1010,7 @@ function PainelInicial({ paginaAtual }) {
                     <button
                       type="button"
                       className="botao-secundario"
-                      onClick={() => setHospedeSelecionado(null)}
+                      onClick={fecharFormularioHospede}
                     >
                       Fechar
                     </button>
@@ -436,11 +1038,14 @@ function PainelInicial({ paginaAtual }) {
                 </div>
               )}
 
-              <ListaHospedes
-                hospedes={hospedes}
-                onVisualizar={visualizarHospede}
-                onEditar={editarHospede}
-              />
+              {modoHospedes === 'lista' && (
+                <ListaHospedes
+                  hospedes={hospedes}
+                  onVisualizar={visualizarHospede}
+                  onEditar={editarHospede}
+                  onExcluir={excluirHospede}
+                />
+              )}
             </>
           )}
 
@@ -450,10 +1055,8 @@ function PainelInicial({ paginaAtual }) {
                 <ListaReservas
                   reservas={reservas}
                   onNovaReserva={abrirNovaReserva}
-                  onVisualizarReserva={(reserva) => {
-                    setReservaSelecionada(reserva)
-                    setModoReservas('detalhes')
-                  }}
+                  onExcluir={excluirReserva}
+                  onVisualizarReserva={verHospedagemPeloPainel}
                 />
               )}
 
@@ -465,6 +1068,7 @@ function PainelInicial({ paginaAtual }) {
                   salvandoReserva={salvandoReserva}
                   onAtualizarCampo={atualizarCampoReserva}
                   onAdicionarReserva={adicionarReserva}
+                  onAbrirNovoHospede={abrirModalHospedeReserva}
                   onCancelar={voltarParaListaReservas}
                 />
               )}
@@ -472,14 +1076,54 @@ function PainelInicial({ paginaAtual }) {
               {modoReservas === 'detalhes' && reservaSelecionada && (
                 <DetalhesReserva
                   reserva={reservaSelecionada}
+                  quartos={quartos}
+                  hospedes={hospedes}
+                  pagamentos={pagamentos.filter(
+                    (pagamento) =>
+                      Number(pagamento.id_reserva) ===
+                      Number(reservaSelecionada.id_reserva),
+                  )}
+                  onAdicionarPagamento={abrirPagamento}
+                  onAtualizarReserva={salvarAlteracoesReserva}
                   onCancelar={voltarParaListaReservas}
-                  onHospedar={concluirHospedagem}
+                  onCancelarReserva={cancelarReserva}
+                  onExcluirPagamento={excluirPagamento}
+                  onFinalizarCheckout={finalizarCheckout}
+                  onReabrirReserva={reabrirReserva}
                   onVoltar={voltarParaListaReservas}
                 />
               )}
             </>
           )}
+
+          {paginaAtual === 'transacoes' && (
+            <Transacoes
+              reservas={reservas}
+              pagamentos={pagamentos}
+              onAdicionarPagamento={abrirPagamento}
+            />
+          )}
         </section>
+      )}
+
+      {reservaPagamento && pagamentoAtual && (
+        <ModalPagamento
+          reserva={reservaPagamento}
+          pagamento={pagamentoAtual}
+          onAtualizarCampo={atualizarCampoPagamento}
+          onFechar={fecharPagamento}
+          onSalvar={salvarPagamento}
+        />
+      )}
+
+      {modalHospedeReservaAberto && (
+        <ModalHospedeReserva
+          hospede={hospedeRapido}
+          salvando={salvandoHospedeRapido}
+          onAtualizarCampo={atualizarCampoHospedeRapido}
+          onFechar={fecharModalHospedeReserva}
+          onSalvar={cadastrarHospedePelaReserva}
+        />
       )}
     </main>
   )

@@ -3,6 +3,7 @@ export const rotas = {
   quartos: '/quartos',
   hospedes: '/hospedes',
   reservas: '/reservas',
+  transacoes: '/transacoes',
 }
 
 export function descobrirPaginaPelaUrl(caminho) {

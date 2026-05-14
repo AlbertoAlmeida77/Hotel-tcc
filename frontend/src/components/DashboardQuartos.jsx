@@ -1,4 +1,5 @@
-const statusPrincipais = ['Disponivel', 'Ocupado', 'Em limpeza', 'Bloqueado']
+import { useEffect, useState } from 'react'
+import { formatarData } from '../services/financeiro'
 
 const indicadoresFixos = [
   { chave: 'todos', texto: 'todos', cor: 'neutro' },
@@ -9,9 +10,13 @@ const indicadoresFixos = [
 ]
 
 function normalizarStatus(status) {
-  const statusTratado = String(status || '').toLowerCase().trim()
+  const statusTratado = String(status || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
 
-  if (statusTratado === 'disponivel' || statusTratado === 'disponível') {
+  if (statusTratado === 'disponivel') {
     return 'disponivel'
   }
 
@@ -22,8 +27,7 @@ function normalizarStatus(status) {
   if (
     statusTratado === 'em limpeza' ||
     statusTratado === 'limpeza' ||
-    statusTratado === 'manutencao' ||
-    statusTratado === 'manutenção'
+    statusTratado === 'manutencao'
   ) {
     return 'em-limpeza'
   }
@@ -35,36 +39,10 @@ function normalizarStatus(status) {
   return 'disponivel'
 }
 
-function obterCorStatus(status) {
-  const statusNormalizado = normalizarStatus(status)
-
-  const cores = {
-    disponivel: '#16a34a',
-    ocupado: '#dc2626',
-    'em-limpeza': '#94a3b8',
-    bloqueado: '#1e293b',
-  }
-
-  return cores[statusNormalizado] || cores.disponivel
-}
-
-function obterStatusParaSelect(status) {
-  const statusNormalizado = normalizarStatus(status)
-
-  const statusPorChave = {
-    disponivel: 'Disponivel',
-    ocupado: 'Ocupado',
-    'em-limpeza': 'Em limpeza',
-    bloqueado: 'Bloqueado',
-  }
-
-  return statusPorChave[statusNormalizado] || 'Disponivel'
-}
-
-function contarStatus(quartos) {
+function contarStatus(quartos, reservas, agora) {
   return quartos.reduce(
     (total, quarto) => {
-      const status = normalizarStatus(quarto.status)
+      const { status } = obterEstadoDoQuarto(quarto, reservas, agora)
 
       return {
         ...total,
@@ -82,8 +60,151 @@ function contarStatus(quartos) {
   )
 }
 
-function DashboardQuartos({ quartos, onAlterarStatus }) {
-  const totais = contarStatus(quartos)
+function criarDataLocal(data, hora = 0) {
+  const [ano, mes, dia] = String(data).slice(0, 10).split('-').map(Number)
+
+  return new Date(ano, mes - 1, dia, hora, 0, 0, 0)
+}
+
+function reservaContaNoPainel(reserva) {
+  const situacao = String(reserva.situacao || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+
+  return ![
+    'bloquear datas',
+    'cancelado',
+    'finalizado',
+  ].includes(situacao)
+}
+
+function obterReservasDoQuarto(quarto, reservas) {
+  return reservas
+    .filter(
+      (reserva) =>
+        Number(reserva.id_quarto) === Number(quarto.id_quarto) &&
+        reservaContaNoPainel(reserva) &&
+        reserva.data_entrada &&
+        reserva.data_saida,
+    )
+    .map((reserva) => ({
+      ...reserva,
+      entrada: criarDataLocal(reserva.data_entrada),
+      checkout: criarDataLocal(reserva.data_saida, 10),
+      fimLimpeza: criarDataLocal(reserva.data_saida, 12),
+    }))
+}
+
+function obterEstadoDoQuarto(quarto, reservas, agora) {
+  const reservasDoQuarto = obterReservasDoQuarto(quarto, reservas)
+  const reservaOcupada = reservasDoQuarto
+    .filter(
+      (reserva) => agora >= reserva.entrada && agora <= reserva.checkout,
+    )
+    .sort((reservaA, reservaB) => reservaA.entrada - reservaB.entrada)[0]
+
+  if (reservaOcupada) {
+    return {
+      status: 'ocupado',
+      textoStatus: 'Ocupado',
+      reserva: reservaOcupada,
+    }
+  }
+
+  const reservaEmLimpeza = reservasDoQuarto
+    .filter(
+      (reserva) => agora > reserva.checkout && agora <= reserva.fimLimpeza,
+    )
+    .sort((reservaA, reservaB) => reservaB.checkout - reservaA.checkout)[0]
+
+  if (reservaEmLimpeza) {
+    return {
+      status: 'em-limpeza',
+      textoStatus: 'Limpeza',
+      reserva: reservaEmLimpeza,
+    }
+  }
+
+  const statusManual = normalizarStatus(quarto.status)
+
+  if (statusManual === 'bloqueado') {
+    return {
+      status: 'bloqueado',
+      textoStatus: 'Bloqueado',
+      reserva: null,
+    }
+  }
+
+  return {
+    status: 'disponivel',
+    textoStatus: 'Disponivel',
+    reserva: null,
+  }
+}
+
+function IconeCama() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M4 11V5" />
+      <path d="M4 16h16" />
+      <path d="M20 16v3" />
+      <path d="M4 19v-8h13a3 3 0 0 1 3 3v2" />
+      <path d="M8 11V9a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v2" />
+    </svg>
+  )
+}
+
+function IconeReserva() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M8 2v4" />
+      <path d="M16 2v4" />
+      <path d="M3 10h18" />
+      <path d="M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+    </svg>
+  )
+}
+
+function IconeHospede() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </svg>
+  )
+}
+
+function IconeSaida() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4" />
+      <path d="M14 8l4 4-4 4" />
+      <path d="M18 12H9" />
+    </svg>
+  )
+}
+
+function DashboardQuartos({
+  quartos,
+  hospedes,
+  reservas,
+  onEditarHospede,
+  onCriarHospedagem,
+  onVerHospedagem,
+  onAbrirCheckout,
+}) {
+  const [agora, setAgora] = useState(() => new Date())
+  const totais = contarStatus(quartos, reservas, agora)
+
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      setAgora(new Date())
+    }, 60000)
+
+    return () => clearInterval(intervalo)
+  }, [])
 
   return (
     <>
@@ -112,51 +233,99 @@ function DashboardQuartos({ quartos, onAlterarStatus }) {
         )}
 
         {quartos.map((quarto) => {
-          const statusNormalizado = normalizarStatus(quarto.status)
-          const podeHospedar = statusNormalizado === 'disponivel'
+          const { reserva, status, textoStatus } = obterEstadoDoQuarto(
+            quarto,
+            reservas,
+            agora,
+          )
+          const hospede = hospedes.find(
+            (hospedeAtual) =>
+              Number(hospedeAtual.id_hospede) === Number(reserva?.id_hospede),
+          )
+          const estaOcupado = status === 'ocupado' && reserva
+          const estaDisponivel = status === 'disponivel'
 
           return (
-            <article className="card-quarto" key={quarto.id_quarto}>
+            <article
+              className={`card-quarto card-quarto-${status}`}
+              key={quarto.id_quarto}
+            >
               <header className="card-quarto-topo">
                 <h3>QUARTO {quarto.numero}</h3>
-
-                <div className="controle-status">
-                  <span
-                    className="bolinha-status"
-                    style={{ backgroundColor: obterCorStatus(quarto.status) }}
-                    title={quarto.status}
-                  />
-
-                  <select
-                    aria-label={`Alterar status do quarto ${quarto.numero}`}
-                    value={obterStatusParaSelect(quarto.status)}
-                    onChange={(evento) =>
-                      onAlterarStatus(quarto, evento.target.value)
-                    }
-                  >
-                    {statusPrincipais.map((status) => (
-                      <option value={status} key={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <span>{textoStatus}</span>
               </header>
 
               <div className="card-quarto-corpo">
-                <p>{quarto.tipo}</p>
-                <span>Capacidade: {quarto.capacidade} pessoa(s)</span>
-                <span>Diaria: R$ {Number(quarto.valor_diaria).toFixed(2)}</span>
+                <p className="observacao-quarto">
+                  {reserva?.observacao || quarto.descricao || ''}
+                </p>
+
+                <div className="linha-card-quarto">
+                  <span className="icone-card" aria-hidden="true">
+                    i
+                  </span>
+                  <strong>{reserva?.nome_hospede || ''}</strong>
+                </div>
+
+                <div className="linha-card-quarto periodo-card">
+                  <span className="icone-card" aria-hidden="true">
+                    #
+                  </span>
+                  <strong>
+                    {reserva
+                      ? `${formatarData(reserva.data_entrada)} - ${formatarData(
+                          reserva.data_saida,
+                        )}`
+                      : ''}
+                  </strong>
+                </div>
               </div>
 
               <footer className="card-quarto-rodape">
-                {podeHospedar ? (
-                  <button type="button" className="botao-hospedar">
+                {estaDisponivel && (
+                  <button
+                    type="button"
+                    className="botao-card-texto"
+                    onClick={() => onCriarHospedagem(quarto)}
+                  >
+                    <IconeCama />
                     Hospedar
                   </button>
-                ) : (
-                  <span className="sem-acao">Hospedagem indisponivel</span>
                 )}
+
+                {reserva && (
+                  <button
+                    type="button"
+                    className="botao-icone-card"
+                    title="Ver hospedagem"
+                    aria-label="Ver hospedagem"
+                    onClick={() => onVerHospedagem(reserva)}
+                  >
+                    <IconeReserva />
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="botao-icone-card"
+                  title="Editar informacoes do hospede"
+                  aria-label="Editar informacoes do hospede"
+                  disabled={!hospede}
+                  onClick={() => onEditarHospede(hospede)}
+                >
+                  <IconeHospede />
+                </button>
+
+                <button
+                  type="button"
+                  className="botao-icone-card"
+                  title="Abrir checkout"
+                  aria-label="Abrir checkout"
+                  disabled={!estaOcupado}
+                  onClick={() => onAbrirCheckout(reserva)}
+                >
+                  <IconeSaida />
+                </button>
               </footer>
             </article>
           )

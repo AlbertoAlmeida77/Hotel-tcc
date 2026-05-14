@@ -1,15 +1,23 @@
 function FormularioQuarto({
   novoQuarto,
   salvandoQuarto,
+  modo,
   onAtualizarCampo,
   onCadastrarQuarto,
+  onCancelar,
 }) {
+  const estaEditando = modo === 'editar'
+
   return (
     <form className="formulario" onSubmit={onCadastrarQuarto}>
       <div className="painel-cabecalho">
         <div>
-          <h2>Cadastrar quarto</h2>
-          <span>Preencha os dados principais do quarto.</span>
+          <h2>{estaEditando ? 'Editar quarto' : 'Cadastrar quarto'}</h2>
+          <span>
+            {estaEditando
+              ? 'Atualize os dados principais do quarto.'
+              : 'Preencha os dados principais do quarto.'}
+          </span>
         </div>
       </div>
 
@@ -90,9 +98,22 @@ function FormularioQuarto({
         </label>
       </div>
 
-      <div className="acoes-formulario">
+      <div className="acoes-formulario acoes-com-espaco">
+        {estaEditando && (
+          <button
+            type="button"
+            className="botao-secundario"
+            onClick={onCancelar}
+          >
+            Cancelar
+          </button>
+        )}
         <button type="submit" disabled={salvandoQuarto}>
-          {salvandoQuarto ? 'Salvando...' : 'Cadastrar quarto'}
+          {salvandoQuarto
+            ? 'Salvando...'
+            : estaEditando
+              ? 'Salvar alteracoes'
+              : 'Cadastrar quarto'}
         </button>
       </div>
     </form>
