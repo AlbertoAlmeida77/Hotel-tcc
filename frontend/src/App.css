@@ -43,6 +43,188 @@
     var(--paper);
 }
 
+.login-page {
+  display: grid;
+  grid-template-columns: minmax(320px, 520px) minmax(0, 1fr);
+  min-height: 100vh;
+  background:
+    linear-gradient(90deg, rgba(255, 250, 241, 0.98) 0 44%, rgba(255, 250, 241, 0.24) 44%),
+    url("./assets/hero.png") center / cover,
+    var(--bg);
+  color: var(--ink);
+}
+
+.login-painel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 34px;
+  min-height: 100vh;
+  padding: clamp(28px, 5vw, 58px);
+  background:
+    linear-gradient(180deg, rgba(255, 250, 241, 0.98), rgba(255, 244, 223, 0.94)),
+    var(--paper);
+  border-right: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  animation: riseIn 0.52s ease both;
+}
+
+.login-marca {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--green-dark);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.login-marca img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.login-cabecalho h1 {
+  margin: 8px 0 10px;
+  font-family: var(--display-font);
+  font-size: clamp(36px, 5vw, 58px);
+  line-height: 0.98;
+}
+
+.login-cabecalho p {
+  max-width: 390px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.login-formulario {
+  display: grid;
+  gap: 18px;
+  max-width: 420px;
+}
+
+.login-formulario label {
+  display: grid;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.login-campo {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  min-height: 52px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.72);
+  overflow: hidden;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.login-campo:focus-within {
+  border-color: rgba(15, 107, 91, 0.42);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(15, 107, 91, 0.12);
+}
+
+.login-campo svg,
+.botao-login svg {
+  justify-self: center;
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.login-campo svg {
+  color: var(--gold);
+}
+
+.login-campo input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0;
+  outline: 0;
+}
+
+.login-campo input::placeholder {
+  color: #9b9284;
+}
+
+.botao-login {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  border: 1px solid var(--green);
+  border-radius: var(--radius);
+  background: var(--green);
+  color: #fffaf1;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 900;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.botao-login:hover {
+  background: var(--green-dark);
+  box-shadow: 0 14px 30px rgba(15, 107, 91, 0.2);
+  transform: translateY(-1px);
+}
+
+.login-destaque {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  min-height: 100vh;
+  padding: clamp(28px, 5vw, 64px);
+  background: linear-gradient(180deg, rgba(36, 33, 29, 0.08), rgba(36, 33, 29, 0.46));
+}
+
+.login-destaque div {
+  display: grid;
+  gap: 8px;
+  max-width: 430px;
+  color: #fffaf1;
+  text-align: right;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.28);
+}
+
+.login-destaque strong {
+  font-family: var(--display-font);
+  font-size: clamp(34px, 5vw, 64px);
+  line-height: 1;
+}
+
+.login-destaque span {
+  font-weight: 750;
+  line-height: 1.5;
+}
+
 .marca {
   display: grid;
   grid-template-columns: 46px 1fr;
@@ -93,6 +275,37 @@
 .navegacao {
   display: grid;
   gap: 8px;
+}
+
+.menu-usuario {
+  display: grid;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.menu-usuario div {
+  display: grid;
+  gap: 3px;
+  padding: 0 8px;
+}
+
+.menu-usuario span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.menu-usuario strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.botao-sair {
+  cursor: pointer;
 }
 
 .nav-item {
@@ -201,6 +414,13 @@
   color: var(--muted);
 }
 
+.topo-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .etiqueta,
 .etiqueta-dashboard,
 .reservas-breadcrumb {
@@ -301,69 +521,122 @@ button:hover svg {
 
 .hero-dashboard {
   position: relative;
+  isolation: isolate;
   display: flex;
-  align-items: end;
-  min-height: 230px;
+  align-items: center;
+  min-height: clamp(240px, 28vw, 320px);
   padding: clamp(28px, 5vw, 48px);
-  border: 1px solid #173d38;
+  border: 1px solid rgba(15, 107, 91, 0.18);
   border-radius: var(--radius);
   background:
-    radial-gradient(circle at 88% 18%, rgba(183, 131, 47, 0.28), transparent 28%),
-    radial-gradient(circle at 14% 92%, rgba(255, 250, 241, 0.12), transparent 24%),
-    linear-gradient(135deg, #113833 0%, #1f4f47 48%, #0f2c2b 100%);
-  color: #fffaf1;
+    radial-gradient(circle at 92% 8%, rgba(183, 131, 47, 0.16), transparent 24%),
+    linear-gradient(135deg, #e8f1df 0%, #cfe2d4 38%, #b8d2c9 100%);
+  color: var(--green-dark);
   overflow: hidden;
-  box-shadow: var(--shadow);
+  box-shadow:
+    0 18px 42px rgba(54, 42, 24, 0.1),
+    inset 0 1px 0 rgba(255, 250, 241, 0.7);
   animation: heroIn 0.62s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+  transition:
+    border-color 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+.hero-dashboard:hover {
+  border-color: rgba(15, 107, 91, 0.26);
+  box-shadow:
+    0 22px 48px rgba(54, 42, 24, 0.13),
+    inset 0 1px 0 rgba(255, 250, 241, 0.76);
 }
 
 .hero-dashboard::before {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: -2;
+  border-radius: inherit;
   background:
-    linear-gradient(rgba(255, 250, 241, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 250, 241, 0.05) 1px, transparent 1px);
-  background-size: 46px 46px;
+    linear-gradient(rgba(15, 107, 91, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 107, 91, 0.045) 1px, transparent 1px);
+  background-size: 42px 42px;
   mask-image: linear-gradient(90deg, transparent, #000 18%, #000 72%, transparent);
-  opacity: 0.38;
+  opacity: 0.48;
   pointer-events: none;
 }
 
-.hero-dashboard > div {
+.hero-dashboard-conteudo {
   position: relative;
-  z-index: 1;
-}
-
-.hero-dashboard > div {
+  z-index: 3;
+  display: grid;
+  gap: 14px;
+  width: min(680px, 66%);
+  padding: clamp(6px, 1.8vw, 16px) 0;
   animation: riseIn 0.7s 0.08s ease both;
 }
 
 .hero-dashboard::after {
   content: "";
   position: absolute;
-  right: clamp(18px, 5vw, 58px);
-  bottom: 0;
-  width: min(420px, 42%);
-  height: 5px;
-  background: var(--gold);
-  transform-origin: right;
-  animation: railSweep 0.9s 0.24s ease both;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgba(232, 241, 223, 0.96) 0%, rgba(232, 241, 223, 0.84) 42%, rgba(232, 241, 223, 0.42) 72%, rgba(232, 241, 223, 0.2) 100%),
+    linear-gradient(180deg, rgba(255, 250, 241, 0.28), transparent 52%);
+  pointer-events: none;
 }
 
 .hero-dashboard h2 {
-  max-width: 740px;
-  margin: 10px 0;
-  font-size: clamp(36px, 5.4vw, 66px);
-  font-weight: 850;
-  line-height: 1;
+  max-width: 760px;
+  margin: 0;
+  color: #173d38;
+  font-size: clamp(38px, 5.1vw, 64px);
+  font-weight: 900;
+  line-height: 0.98;
+  text-wrap: balance;
+  text-shadow: 0 1px 0 rgba(255, 250, 241, 0.72);
 }
 
 .hero-dashboard p {
-  max-width: 560px;
+  max-width: 540px;
   margin: 0;
-  color: #f6e7c8;
-  font-size: 18px;
+  color: #42635c;
+  font-size: clamp(16px, 1.6vw, 18px);
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.hero-logo-decorativa {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: clamp(-28px, 0vw, 10px);
+  width: clamp(390px, 44vw, 600px);
+  transform: translateY(-50%);
+  opacity: 0.52;
+  filter: blur(0.1px) saturate(1.12) contrast(1.05);
+  pointer-events: none;
+  transition:
+    opacity 0.32s ease,
+    transform 0.32s ease;
+}
+
+.hero-dashboard:hover .hero-logo-decorativa {
+  opacity: 0.58;
+  transform: translateY(-50%);
+}
+
+.hero-logo-glass {
+  position: relative;
+  border-radius: inherit;
+}
+
+.hero-logo-glass img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 902 / 485;
+  object-fit: cover;
+  mix-blend-mode: normal;
 }
 
 .indicadores,
@@ -521,7 +794,8 @@ button:hover svg {
   gap: 12px;
   min-height: 72px;
   padding: 16px 18px;
-  background: var(--paper-strong);
+  background:
+    linear-gradient(135deg, rgba(255, 250, 241, 0.98), rgba(255, 244, 223, 0.92));
   color: var(--ink);
   border-bottom: 1px solid var(--line);
 }
@@ -529,29 +803,87 @@ button:hover svg {
 .card-quarto-topo h3 {
   margin: 0;
   font-size: 18px;
+  font-weight: 900;
 }
 
 .card-quarto-topo span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 9px;
+  border-radius: 999px;
   font-size: 12px;
   font-weight: 900;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .card-quarto-disponivel {
-  border-top: 4px solid #4f8f58;
+  border-top: 4px solid #24864d;
+}
+
+.card-quarto-disponivel .card-quarto-topo {
+  background: linear-gradient(135deg, #eef8ea, #fff4df);
+}
+
+.card-quarto-disponivel .card-quarto-topo h3 {
+  color: #123f32;
+}
+
+.card-quarto-disponivel .card-quarto-topo span {
+  background: #d4efcf;
+  color: #0b563e;
 }
 
 .card-quarto-ocupado {
-  border-top: 4px solid var(--red);
+  border-top: 4px solid #c83c31;
+}
+
+.card-quarto-ocupado .card-quarto-topo {
+  background: linear-gradient(135deg, #fff0ec, #fff4df);
+}
+
+.card-quarto-ocupado .card-quarto-topo h3 {
+  color: #5d1e18;
+}
+
+.card-quarto-ocupado .card-quarto-topo span {
+  background: #f4c5bd;
+  color: #7c251e;
 }
 
 .card-quarto-em-limpeza {
-  border-top: 4px solid #88918c;
+  border-top: 4px solid #7b8781;
+}
+
+.card-quarto-em-limpeza .card-quarto-topo {
+  background: linear-gradient(135deg, #eef1ef, #fff4df);
+}
+
+.card-quarto-em-limpeza .card-quarto-topo h3 {
+  color: #2f3733;
+}
+
+.card-quarto-em-limpeza .card-quarto-topo span {
+  background: #d8dedb;
+  color: #37413d;
 }
 
 .card-quarto-bloqueado {
-  border-top: 4px solid var(--slate);
+  border-top: 4px solid #2f3840;
+}
+
+.card-quarto-bloqueado .card-quarto-topo {
+  background: linear-gradient(135deg, #eceff0, #fff4df);
+}
+
+.card-quarto-bloqueado .card-quarto-topo h3 {
+  color: #20282d;
+}
+
+.card-quarto-bloqueado .card-quarto-topo span {
+  background: #384148;
+  color: #fffaf1;
 }
 
 .card-quarto-corpo {
@@ -829,7 +1161,20 @@ textarea {
 }
 
 .botao-pagamento-topo,
-.botao-adicionar-hospede {
+.botao-adicionar-hospede,
+.botao-novo-faturamento {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+.botao-novo-faturamento {
+  min-width: 168px;
+  background: #174f66;
+  border-color: #174f66;
+  box-shadow: 0 12px 26px rgba(35, 91, 140, 0.16);
+}
+
+.botao-faturar-reservas {
   background: var(--blue);
   border-color: var(--blue);
 }
@@ -1075,32 +1420,43 @@ textarea {
   gap: 22px;
 }
 
-.reservas-breadcrumb {
+.reservas-breadcrumb,
+.hospedes-breadcrumb {
   gap: 8px;
 }
 
-.reservas-breadcrumb span {
+.reservas-breadcrumb span,
+.hospedes-breadcrumb span {
   color: var(--green);
 }
 
-.reservas-breadcrumb strong {
+.reservas-breadcrumb strong,
+.hospedes-breadcrumb strong {
   color: var(--muted);
 }
 
-.reservas-toolbar {
+.hospedes-listagem {
+  display: grid;
+  gap: 22px;
+}
+
+.reservas-toolbar,
+.hospedes-toolbar {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) auto auto;
   gap: 14px;
   align-items: center;
 }
 
-.campo-busca-reservas {
+.campo-busca-reservas,
+.campo-busca-hospedes {
   position: relative;
   display: block;
   font-weight: 500;
 }
 
-.campo-busca-reservas span {
+.campo-busca-reservas span,
+.campo-busca-hospedes span {
   position: absolute;
   top: 50%;
   left: 14px;
@@ -1112,7 +1468,8 @@ textarea {
   transform: translateY(-50%);
 }
 
-.campo-busca-reservas svg {
+.campo-busca-reservas svg,
+.campo-busca-hospedes svg {
   width: 19px;
   height: 19px;
   fill: none;
@@ -1122,19 +1479,35 @@ textarea {
   stroke-width: 2;
 }
 
-.campo-busca-reservas input {
+.campo-busca-reservas input,
+.campo-busca-hospedes input {
   min-height: 46px;
   padding-left: 44px;
 }
 
-.botao-filtro-reservas {
+.botao-filtro-reservas,
+.botao-filtro-hospedes {
   width: 50px;
   min-height: 46px;
   padding: 0;
 }
 
-.botao-filtro-reservas svg {
+.botao-filtro-reservas svg,
+.botao-filtro-hospedes svg {
   transform: none;
+}
+
+.botao-novo-hospede {
+  min-height: 46px;
+  background: var(--green);
+  border-color: var(--green);
+  box-shadow: 0 12px 26px rgba(15, 107, 91, 0.16);
+}
+
+.botao-novo-hospede:hover,
+.botao-filtro-hospedes:hover {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
 }
 
 .filtros-reservas {
@@ -1191,30 +1564,79 @@ textarea {
   box-shadow: var(--shadow);
 }
 
-.reservas-cabecalho {
+.painel-hospedes-tabela {
+  box-shadow: var(--shadow);
+}
+
+.reservas-cabecalho,
+.hospedes-cabecalho {
   min-height: 70px;
 }
 
-.reservas-cabecalho h2 {
+.reservas-cabecalho h2,
+.hospedes-cabecalho h2 {
   font-size: 22px;
 }
 
-.reservas-cabecalho-acoes {
+.reservas-cabecalho-acoes,
+.hospedes-total {
   color: var(--green);
   font-weight: 850;
 }
 
-.tabela-reservas-wrap {
+.reservas-cabecalho-acoes,
+.transacoes-acoes-lote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.reservas-cabecalho-acoes span,
+.transacoes-acoes-lote span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.hospedes-cabecalho > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.hospedes-total {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--gold);
+}
+
+.hospedes-total svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.tabela-reservas-wrap,
+.tabela-hospedes-wrap {
   overflow-x: auto;
 }
 
-.tabela-reservas {
+.tabela-reservas,
+.tabela-hospedes {
   width: 100%;
   min-width: 900px;
   border-collapse: collapse;
 }
 
-.tabela-reservas th {
+.tabela-reservas th,
+.tabela-hospedes th {
   padding: 14px 24px;
   border-bottom: 1px solid var(--line);
   background: var(--green-dark);
@@ -1224,7 +1646,24 @@ textarea {
   white-space: nowrap;
 }
 
-.tabela-reservas td {
+.tabela-reservas th input[type="checkbox"],
+.tabela-reservas td input[type="checkbox"],
+.tabela-transacoes th input[type="checkbox"],
+.tabela-transacoes td input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  accent-color: var(--green);
+}
+
+.tabela-hospedes th {
+  background: linear-gradient(135deg, var(--green-dark), #174f45);
+  color: #fffaf1;
+}
+
+.tabela-reservas td,
+.tabela-hospedes td {
   padding: 14px 24px;
   border-bottom: 1px solid var(--line);
   color: var(--muted);
@@ -1232,14 +1671,54 @@ textarea {
   vertical-align: middle;
 }
 
-.tabela-reservas tbody tr:hover {
+.tabela-reservas tbody tr:hover,
+.tabela-hospedes tbody tr:hover {
   background: rgba(255, 244, 223, 0.58);
 }
 
-.tabela-reservas tbody tr {
+.tabela-reservas tbody tr,
+.tabela-hospedes tbody tr {
   transition:
     background 0.18s ease,
     transform 0.18s ease;
+}
+
+.status-hospede-ativo {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(15, 107, 91, 0.32);
+  border-radius: 50%;
+  background: #eef7e9;
+  color: var(--green);
+}
+
+.status-hospede-ativo svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.link-hospede {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--green-dark);
+  font-weight: 850;
+  box-shadow: none;
+}
+
+.link-hospede:hover {
+  background: transparent;
+  color: var(--gold);
+  box-shadow: none;
+  transform: none;
 }
 
 .linha-tabela-reserva td:first-child {
@@ -1290,6 +1769,14 @@ textarea {
   transform: none;
 }
 
+.codigo-reserva-tabela {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--green-dark);
+  font-weight: 850;
+}
+
 .marcador-reserva {
   width: 14px;
   height: 14px;
@@ -1309,6 +1796,118 @@ textarea {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.painel-transacoes {
+  box-shadow: var(--shadow);
+}
+
+.tabela-transacoes-wrap {
+  overflow-x: auto;
+}
+
+.tabela-transacoes {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.tabela-transacoes th {
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 244, 223, 0.82);
+  color: #4c443a;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tabela-transacoes td {
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(222, 210, 189, 0.82);
+  color: var(--muted);
+  font-size: 14px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.tabela-transacoes tbody tr {
+  transition:
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.tabela-transacoes tbody tr:hover {
+  background: rgba(255, 244, 223, 0.48);
+}
+
+.linha-transacao td:first-child {
+  border-left: 5px solid #9aa39d;
+}
+
+.linha-transacao-pago td:first-child {
+  border-left-color: var(--green);
+}
+
+.linha-transacao-pendente td:first-child {
+  border-left-color: var(--red);
+}
+
+.linha-transacao-parcial td:first-child {
+  border-left-color: var(--gold);
+}
+
+.tabela-transacoes td strong {
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.valor-recebido {
+  color: var(--green-dark) !important;
+  font-weight: 850;
+}
+
+.valor-pendente {
+  color: #8a4c12 !important;
+  font-weight: 850;
+}
+
+.badge-pagamento {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.badge-pago {
+  background: #dcefdc;
+  color: var(--green-dark);
+}
+
+.badge-pendente {
+  background: #f3d1c9;
+  color: #7c251e;
+}
+
+.badge-parcial {
+  background: #fff0b8;
+  color: #6b4511;
+}
+
+.acao-transacao {
+  text-align: right;
+}
+
+.acao-transacao .botao-pequeno {
+  min-width: 166px;
+}
+
 .item-transacao {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -1316,6 +1915,10 @@ textarea {
 
 .item-transacao .detalhes {
   grid-column: 1 / -1;
+}
+
+.item-transacao .botao-excluir {
+  justify-self: end;
 }
 
 .valor-transacao {
@@ -1363,6 +1966,159 @@ textarea {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px 32px;
+}
+
+.orcamento-campos {
+  padding: 2px 4px 0;
+}
+
+.orcamento-secao {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 244, 223, 0.36);
+}
+
+.orcamento-secao-topo,
+.linha-quarto-orcamento,
+.linha-resumo-orcamento {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.orcamento-secao-topo h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 17px;
+}
+
+.orcamento-secao-topo span,
+.linha-resumo-orcamento small {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.lista-quartos-orcamento,
+.resumo-orcamento {
+  display: grid;
+  gap: 8px;
+}
+
+.linha-quarto-orcamento {
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  min-height: 54px;
+  padding: 10px 12px;
+  border: 1px solid rgba(222, 210, 189, 0.78);
+  border-radius: var(--radius);
+  background: #fffcf6;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.linha-quarto-orcamento:has(input:checked) {
+  border-color: rgba(15, 107, 91, 0.32);
+  background: #eef7e9;
+  box-shadow: inset 4px 0 0 var(--green);
+}
+
+.linha-quarto-orcamento:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.linha-quarto-orcamento input {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  accent-color: var(--green);
+}
+
+.linha-quarto-orcamento strong,
+.linha-resumo-orcamento span {
+  color: var(--ink);
+}
+
+.linha-quarto-orcamento small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.linha-quarto-orcamento b {
+  color: var(--green-dark);
+  font-size: 14px;
+}
+
+.linha-resumo-orcamento {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(222, 210, 189, 0.8);
+}
+
+.linha-resumo-orcamento:last-child {
+  border-bottom: 0;
+}
+
+.linha-resumo-orcamento strong {
+  color: var(--green-dark);
+}
+
+.modal-cabecalho span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.faturamento-lote-resumo {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 244, 223, 0.36);
+}
+
+.faturamento-lote-lista {
+  display: grid;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.faturamento-lote-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(222, 210, 189, 0.82);
+}
+
+.faturamento-lote-item:last-child {
+  border-bottom: 0;
+}
+
+.faturamento-lote-item strong {
+  color: var(--ink);
+}
+
+.faturamento-lote-item small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.faturamento-lote-item b {
+  color: var(--green-dark);
 }
 
 .switch-linha {
@@ -1510,6 +2266,24 @@ textarea {
 }
 
 @media (max-width: 1100px) {
+  .login-page {
+    grid-template-columns: 1fr;
+    background:
+      linear-gradient(180deg, rgba(255, 250, 241, 0.96), rgba(255, 250, 241, 0.8)),
+      url("./assets/hero.png") center / cover,
+      var(--bg);
+  }
+
+  .login-painel {
+    width: min(100%, 560px);
+    min-height: 100vh;
+    border-right: 0;
+  }
+
+  .login-destaque {
+    display: none;
+  }
+
   .layout-reserva {
     grid-template-columns: 1fr;
   }
@@ -1569,17 +2343,33 @@ textarea {
     flex-direction: column;
   }
 
-  .hero-dashboard {
-    min-height: 210px;
+  .topo-acoes {
+    justify-content: stretch;
+    width: 100%;
   }
 
-  .hero-dashboard::after {
-    width: 48%;
+  .topo-acoes button {
+    flex: 1 1 180px;
+  }
+
+  .hero-dashboard {
+    min-height: 280px;
+  }
+
+  .hero-dashboard-conteudo {
+    width: min(100%, 600px);
+  }
+
+  .hero-logo-decorativa {
+    right: -72px;
+    width: clamp(340px, 52vw, 470px);
+    opacity: 0.4;
   }
 
   .campos,
   .grade,
   .reservas-toolbar,
+  .hospedes-toolbar,
   .grade-transacoes,
   .modal-grade,
   .item-transacao,
@@ -1595,7 +2385,8 @@ textarea {
   }
 
   .acoes-formulario button,
-  .reservas-toolbar button {
+  .reservas-toolbar button,
+  .hospedes-toolbar button {
     width: 100%;
   }
 
@@ -1609,6 +2400,17 @@ textarea {
 }
 
 @media (max-width: 640px) {
+  .login-painel {
+    gap: 26px;
+    padding: 24px 18px;
+  }
+
+  .login-marca {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
   .campo-situacao,
   .reserva-campos {
     grid-template-columns: 1fr;
@@ -1621,7 +2423,40 @@ textarea {
   }
 
   .hero-dashboard {
+    align-items: center;
+    min-height: 280px;
     padding: 24px;
+  }
+
+  .hero-dashboard::after {
+    background:
+      linear-gradient(180deg, rgba(232, 241, 223, 0.76) 0%, rgba(232, 241, 223, 0.96) 72%),
+      linear-gradient(90deg, rgba(232, 241, 223, 0.88), rgba(232, 241, 223, 0.36));
+  }
+
+  .hero-dashboard-conteudo {
+    width: 100%;
+    text-align: left;
+  }
+
+  .hero-dashboard h2 {
+    font-size: clamp(34px, 10vw, 48px);
+  }
+
+  .hero-dashboard p {
+    max-width: 430px;
+  }
+
+  .hero-logo-decorativa {
+    top: 50%;
+    right: -34px;
+    width: min(88vw, 360px);
+    opacity: 0.32;
+    transform: translateY(-50%);
+  }
+
+  .hero-dashboard:hover .hero-logo-decorativa {
+    transform: translateY(-50%);
   }
 }
 

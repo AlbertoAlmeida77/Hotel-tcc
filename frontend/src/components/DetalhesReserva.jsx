@@ -62,9 +62,10 @@ function DetalhesReserva({
     0,
   )
   const faltaLancar = Math.max(total - recebido, 0)
-  const pagamentoCompleto = faltaLancar <= 0
   const reservaCancelada = reserva.situacao === 'cancelado'
-  const reservaFinalizada = reserva.situacao === 'finalizado'
+  const reservaFinalizada = ['finalizado', 'finalizada'].includes(
+    reserva.situacao,
+  )
   const camposBloqueados = reservaCancelada || reservaFinalizada
 
   function atualizarCampo(evento) {
@@ -275,21 +276,10 @@ function DetalhesReserva({
                   </button>
                   <button
                     type="button"
-                    className="botao-pagamento-topo"
-                    onClick={() => onAdicionarPagamento(reserva)}
-                  >
-                    Realizar pagamento
-                  </button>
-                  <button
-                    type="button"
                     className="botao-hospedar-reserva"
-                    disabled={!pagamentoCompleto || reservaFinalizada}
+                    disabled={reservaFinalizada}
                     onClick={() => onFinalizarCheckout(reserva)}
-                    title={
-                      pagamentoCompleto
-                        ? 'Finalizar checkout'
-                        : 'Finalize o pagamento antes do checkout'
-                    }
+                    title="Finalizar checkout"
                   >
                     Dar checkout
                   </button>
@@ -358,16 +348,6 @@ function DetalhesReserva({
           <div className="painel atividades-reserva">
             <div className="painel-cabecalho">
               <h2>Atividades na reserva</h2>
-              {!camposBloqueados && (
-                <button
-                  type="button"
-                  className="botao-icone"
-                  onClick={() => onAdicionarPagamento(reserva)}
-                  title="Adicionar pagamento"
-                >
-                  +
-                </button>
-              )}
             </div>
             {pagamentos.length === 0 && (
               <p>Nenhum pagamento lancado para esta reserva.</p>

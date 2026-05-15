@@ -7,6 +7,8 @@ import FormularioReserva from '../components/FormularioReserva'
 import ListaHospedes from '../components/ListaHospedes'
 import ListaQuartos from '../components/ListaQuartos'
 import ListaReservas from '../components/ListaReservas'
+import ModalFaturamentoAvulso from '../components/ModalFaturamentoAvulso'
+import ModalFaturamentoLote from '../components/ModalFaturamentoLote'
 import ModalHospedeReserva from '../components/ModalHospedeReserva'
 import ModalPagamento from '../components/ModalPagamento'
 import Transacoes from '../components/Transacoes'
@@ -21,12 +23,17 @@ import {
   cadastrarReservaNoServidor,
   excluirHospedeNoServidor,
   excluirQuartoNoServidor,
-  excluirReservaNoServidor,
 } from '../services/api'
 import {
+  calcularDiarias,
   calcularTotalReserva,
   criarPagamentoDaReserva,
+  formatarDataCampo,
 } from '../services/financeiro'
+import {
+  baixarPdfFaturamentoAvulso,
+  baixarPdfFaturamentoReservas,
+} from '../services/pdfFaturamento'
 
 const quartoVazio = {
   numero: '',
@@ -134,6 +141,9 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
   })
   const [reservaPagamento, setReservaPagamento] = useState(null)
   const [pagamentoAtual, setPagamentoAtual] = useState(null)
+  const [reservasFaturamento, setReservasFaturamento] = useState([])
+  const [faturamentoAtual, setFaturamentoAtual] = useState(null)
+  const [faturamentoAvulso, setFaturamentoAvulso] = useState(null)
   const [modalHospedeReservaAberto, setModalHospedeReservaAberto] =
     useState(false)
   const [hospedeRapido, setHospedeRapido] = useState(hospedeVazio)
@@ -316,15 +326,6 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
     onMudarPagina('hospedes', { modo: 'novo' })
   }
 
-  function visualizarHospede(hospede) {
-    setHospedeSelecionado(hospede)
-    setModoHospedes('detalhes')
-    onMudarPagina('hospedes', {
-      modo: 'detalhes',
-      id: hospede.id_hospede,
-    })
-  }
-
   function editarHospede(hospede) {
     setNovoHospede({
       id_hospede: hospede.id_hospede,
@@ -404,44 +405,14 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
         setHospedeSelecionado(null)
       }
 
-      mostrarMensagemQuarto('Hospede excluido com sucesso.')
-    } catch (erroAtual) {
-      setErro(erroAtual.message)
-    }
-  }
-
-  async function excluirReserva(reserva) {
-    const confirmou = window.confirm(
-      `Deseja excluir a reserva HO:${String(reserva.id_reserva).padStart(
-        6,
-        '0',
-      )}?`,
-    )
-
-    if (!confirmou) {
-      return
-    }
-
-    try {
-      setErro('')
-      await excluirReservaNoServidor(reserva.id_reserva)
-      setReservas((reservasAtuais) =>
-        reservasAtuais.filter(
-          (reservaAtual) => reservaAtual.id_reserva !== reserva.id_reserva,
-        ),
-      )
-      setPagamentos((pagamentosAtuais) =>
-        pagamentosAtuais.filter(
-          (pagamento) =>
-            Number(pagamento.id_reserva) !== Number(reserva.id_reserva),
-        ),
-      )
-
-      if (reservaSelecionada?.id_reserva === reserva.id_reserva) {
-        voltarParaListaReservas()
+      if (novoHospede?.id_hospede === hospede.id_hospede) {
+        setNovoHospede(hospedeVazio)
+        setModoFormularioHospede('cadastrar')
+        setModoHospedes('lista')
+        onMudarPagina('hospedes')
       }
 
-      mostrarMensagemQuarto('Reserva excluida com sucesso.')
+      mostrarMensagemQuarto('Hospede excluido com sucesso.')
     } catch (erroAtual) {
       setErro(erroAtual.message)
     }
@@ -552,7 +523,7 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
     onMudarPagina('reservas')
   }
 
-  function abrirPagamento(reserva) {
+  function calcularValorPendenteReserva(reserva) {
     const totalReserva = calcularTotalReserva(reserva)
     const recebido = pagamentos
       .filter(
@@ -561,10 +532,65 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
           pagamento.concluido,
       )
       .reduce((total, pagamento) => total + Number(pagamento.valor || 0), 0)
-    const valorPendente = Math.max(totalReserva - recebido, 0)
+
+    return Math.max(totalReserva - recebido, 0)
+  }
+
+  function abrirPagamento(reserva) {
+    const valorPendente = calcularValorPendenteReserva(reserva)
 
     setReservaPagamento(reserva)
     setPagamentoAtual(criarPagamentoDaReserva(reserva, valorPendente))
+  }
+
+  function abrirFaturamentoReservas(reservasSelecionadas) {
+    const reservasComPendente = reservasSelecionadas
+      .map((reserva) => ({
+        ...reserva,
+        valor_pendente: calcularValorPendenteReserva(reserva),
+      }))
+      .filter((reserva) => reserva.valor_pendente > 0)
+
+    if (reservasComPendente.length === 0) {
+      setErro('Selecione ao menos uma reserva com valor pendente para faturar.')
+      return
+    }
+
+    const hoje = formatarDataCampo()
+
+    setErro('')
+    setReservasFaturamento(reservasComPendente)
+    setFaturamentoAtual({
+      faturarPara: '',
+      descricao: `Faturamento de ${reservasComPendente.length} reserva(s)`,
+      forma: '',
+      conta: 'Conta padrao',
+      categoria: 'Hospedagem',
+      emissao: hoje,
+      vencimento: hoje,
+      concluido: true,
+    })
+  }
+
+  function abrirFaturamentoAvulso() {
+    const hoje = formatarDataCampo()
+
+    setErro('')
+    setFaturamentoAvulso({
+      faturarPara: '',
+      descricao: '',
+      forma: '',
+      conta: 'Conta padrao',
+      categoria: 'Avulso',
+      emissao: hoje,
+      vencimento: hoje,
+      dataEntrada: hoje,
+      dataSaida: '',
+      diarias: 0,
+      quartosSelecionados: [],
+      valor: '',
+      concluido: true,
+    })
   }
 
   function abrirCheckoutPeloPainel(reserva) {
@@ -581,6 +607,15 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
     setPagamentoAtual(null)
   }
 
+  function fecharFaturamentoReservas() {
+    setReservasFaturamento([])
+    setFaturamentoAtual(null)
+  }
+
+  function fecharFaturamentoAvulso() {
+    setFaturamentoAvulso(null)
+  }
+
   function atualizarCampoPagamento(evento) {
     const { checked, name, type, value } = evento.target
 
@@ -588,6 +623,74 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
       ...pagamento,
       [name]: type === 'checkbox' ? checked : value,
     }))
+  }
+
+  function atualizarCampoFaturamento(evento) {
+    const { checked, name, type, value } = evento.target
+
+    setFaturamentoAtual((faturamento) => ({
+      ...faturamento,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+  }
+
+  function atualizarCampoFaturamentoAvulso(evento) {
+    const { checked, name, type, value } = evento.target
+
+    setFaturamentoAvulso((faturamento) =>
+      prepararFaturamentoAvulso({
+        ...faturamento,
+        [name]: type === 'checkbox' ? checked : value,
+      }),
+    )
+  }
+
+  function calcularTotalQuartosFaturamento(faturamento) {
+    return quartos
+      .filter((quarto) =>
+        faturamento.quartosSelecionados.includes(String(quarto.id_quarto)),
+      )
+      .reduce(
+        (total, quarto) =>
+          total +
+          Number(quarto.valor_diaria || 0) * Number(faturamento.diarias || 0),
+        0,
+      )
+  }
+
+  function prepararFaturamentoAvulso(faturamento) {
+    const diarias =
+      calcularDiarias(faturamento.dataEntrada, faturamento.dataSaida) || 0
+    const proximoFaturamento = {
+      ...faturamento,
+      diarias,
+    }
+
+    if (proximoFaturamento.quartosSelecionados.length > 0) {
+      proximoFaturamento.valor =
+        calcularTotalQuartosFaturamento(proximoFaturamento).toFixed(2)
+    }
+
+    return proximoFaturamento
+  }
+
+  function alternarQuartoFaturamentoAvulso(idQuarto) {
+    const idTratado = String(idQuarto)
+
+    setFaturamentoAvulso((faturamento) => {
+      const jaSelecionado =
+        faturamento.quartosSelecionados.includes(idTratado)
+      const quartosSelecionados = jaSelecionado
+        ? faturamento.quartosSelecionados.filter(
+            (idAtual) => idAtual !== idTratado,
+          )
+        : [...faturamento.quartosSelecionados, idTratado]
+
+      return prepararFaturamentoAvulso({
+        ...faturamento,
+        quartosSelecionados,
+      })
+    })
   }
 
   function salvarPagamento(evento) {
@@ -623,6 +726,101 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
     ])
     fecharPagamento()
     mostrarMensagemQuarto('Pagamento adicionado com sucesso.')
+  }
+
+  function salvarFaturamentoReservas(evento) {
+    evento.preventDefault()
+
+    const novosPagamentos = reservasFaturamento
+      .map((reserva) => {
+        const valorPendente = calcularValorPendenteReserva(reserva)
+
+        if (valorPendente <= 0) {
+          return null
+        }
+
+        const destino = faturamentoAtual.faturarPara
+          ? ` - Faturar para: ${faturamentoAtual.faturarPara}`
+          : ''
+
+        return {
+          ...criarPagamentoDaReserva(reserva, valorPendente),
+          ...faturamentoAtual,
+          id: crypto.randomUUID(),
+          id_reserva: reserva.id_reserva,
+          descricao: `${faturamentoAtual.descricao} - ${reserva.nome_hospede}${destino}`,
+          valor: valorPendente,
+        }
+      })
+      .filter(Boolean)
+
+    if (novosPagamentos.length === 0) {
+      setErro('As reservas selecionadas nao possuem valor pendente.')
+      return
+    }
+
+    setPagamentos((pagamentosAtuais) => [
+      ...novosPagamentos,
+      ...pagamentosAtuais,
+    ])
+    baixarPdfFaturamentoReservas({
+      faturamento: faturamentoAtual,
+      reservas: reservasFaturamento,
+      pagamentos: novosPagamentos,
+    })
+    fecharFaturamentoReservas()
+    mostrarMensagemQuarto('Faturamento gerado e PDF baixado com sucesso.')
+  }
+
+  function salvarFaturamentoAvulso(evento) {
+    evento.preventDefault()
+
+    const valorFaturamento = Number(faturamentoAvulso.valor || 0)
+    const quartosFaturados = quartos
+      .filter((quarto) =>
+        faturamentoAvulso.quartosSelecionados.includes(String(quarto.id_quarto)),
+      )
+      .map((quarto) => ({
+        id_quarto: quarto.id_quarto,
+        numero: quarto.numero,
+        tipo: quarto.tipo,
+        valor_diaria: quarto.valor_diaria,
+      }))
+
+    if (quartosFaturados.length > 0 && Number(faturamentoAvulso.diarias) <= 0) {
+      setErro('Informe entrada e saida validas para faturar quartos.')
+      return
+    }
+
+    if (valorFaturamento <= 0) {
+      setErro('Informe um valor maior que zero para gerar o faturamento.')
+      return
+    }
+
+    const descricaoDestino = faturamentoAvulso.faturarPara
+      ? `${faturamentoAvulso.descricao} - ${faturamentoAvulso.faturarPara}`
+      : faturamentoAvulso.descricao
+
+    const novoPagamento = {
+      ...faturamentoAvulso,
+      id: crypto.randomUUID(),
+      id_reserva: null,
+      tipo: 'avulso',
+      descricao: descricaoDestino,
+      quartos_faturados: quartosFaturados,
+      data_entrada: faturamentoAvulso.dataEntrada,
+      data_saida: faturamentoAvulso.dataSaida,
+      diarias: faturamentoAvulso.diarias,
+      valor: valorFaturamento,
+    }
+
+    setPagamentos((pagamentosAtuais) => [
+      novoPagamento,
+      ...pagamentosAtuais,
+    ])
+    baixarPdfFaturamentoAvulso({ faturamento: novoPagamento })
+    fecharFaturamentoAvulso()
+    mostrarMensagemQuarto('Faturamento avulso gerado e PDF baixado com sucesso.')
   }
 
   function excluirPagamento(pagamento) {
@@ -663,20 +861,52 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
 
     try {
       setErro('')
-      await atualizarReservaNoServidor({
+      const reservaFinalizada = {
         ...reserva,
         situacao: 'finalizado',
+      }
+
+      await atualizarReservaNoServidor(reservaFinalizada)
+      await atualizarStatusQuartoNoServidor(quarto, 'em limpeza')
+      const dadosAtualizados = await buscarDadosDoServidor()
+      const reservaAtualizada = dadosAtualizados.reservas.find(
+        (reservaAtual) =>
+          Number(reservaAtual.id_reserva) === Number(reserva.id_reserva),
+      )
+
+      setQuartos(dadosAtualizados.quartos)
+      setHospedes(dadosAtualizados.hospedes)
+      setReservas(dadosAtualizados.reservas)
+      setReservaSelecionada(reservaAtualizada || reservaFinalizada)
+      setModoReservas('detalhes')
+      onMudarPagina('reservas', {
+        modo: 'detalhes',
+        id: reserva.id_reserva,
       })
-      await atualizarStatusQuartoNoServidor(quarto, 'Disponivel')
+      mostrarMensagemQuarto('Checkout finalizado com sucesso.')
+    } catch (erroAtual) {
+      setErro(erroAtual.message)
+    }
+  }
+
+  async function liberarQuarto(quarto) {
+    const confirmou = window.confirm(
+      `Liberar o quarto ${quarto.numero} para novas hospedagens?`,
+    )
+
+    if (!confirmou) {
+      return
+    }
+
+    try {
+      setErro('')
+      await atualizarStatusQuartoNoServidor(quarto, 'disponivel')
       const dadosAtualizados = await buscarDadosDoServidor()
 
       setQuartos(dadosAtualizados.quartos)
       setHospedes(dadosAtualizados.hospedes)
       setReservas(dadosAtualizados.reservas)
-      setReservaSelecionada(null)
-      setModoReservas('lista')
-      onMudarPagina('reservas')
-      mostrarMensagemQuarto('Checkout finalizado com sucesso.')
+      mostrarMensagemQuarto('Quarto liberado com sucesso.')
     } catch (erroAtual) {
       setErro(erroAtual.message)
     }
@@ -840,8 +1070,18 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
         )
 
         if (hospede) {
-          setHospedeSelecionado(hospede)
-          setModoHospedes('detalhes')
+          setNovoHospede({
+            id_hospede: hospede.id_hospede,
+            nome: hospede.nome || '',
+            cpf: hospede.cpf || '',
+            telefone: hospede.telefone || '',
+            email: hospede.email || '',
+            endereco: hospede.endereco || '',
+            observacoes: hospede.observacoes || '',
+          })
+          setHospedeSelecionado(null)
+          setModoFormularioHospede('editar')
+          setModoHospedes('formulario')
         }
 
         return
@@ -935,6 +1175,17 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
           <h1>{textoPagina.titulo}</h1>
           <p>{textoPagina.descricao}</p>
         </div>
+        {paginaAtual === 'transacoes' && (
+          <div className="topo-acoes">
+            <button
+              type="button"
+              className="botao-novo-faturamento"
+              onClick={abrirFaturamentoAvulso}
+            >
+              + Novo faturamento
+            </button>
+          </div>
+        )}
       </header>
 
       {erro && <p className="aviso erro">{erro}</p>}
@@ -965,6 +1216,7 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
               onCriarHospedagem={criarHospedagemPeloPainel}
               onVerHospedagem={verHospedagemPeloPainel}
               onAbrirCheckout={abrirCheckoutPeloPainel}
+              onLiberarQuarto={liberarQuarto}
             />
           )}
 
@@ -1015,17 +1267,8 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
 
           {paginaAtual === 'hospedes' && (
             <>
-              <div className="barra-acoes">
-                {modoHospedes === 'lista' ? (
-                  <button
-                    type="button"
-                    className="botao-com-icone"
-                    onClick={abrirCadastroHospede}
-                  >
-                    <IconeAcao tipo="adicionar" />
-                    Novo hospede
-                  </button>
-                ) : (
+              {modoHospedes !== 'lista' && (
+                <div className="barra-acoes">
                   <button
                     type="button"
                     className="botao-secundario botao-com-icone"
@@ -1034,8 +1277,8 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
                     <IconeAcao tipo="voltar" />
                     Voltar para lista
                   </button>
-                )}
-              </div>
+                </div>
+              )}
 
               {modoHospedes === 'formulario' && (
                 <FormularioHospede
@@ -1045,6 +1288,7 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
                   onAtualizarCampo={atualizarCampoHospede}
                   onCadastrarHospede={cadastrarHospede}
                   onCancelar={fecharFormularioHospede}
+                  onExcluir={excluirHospede}
                 />
               )}
 
@@ -1090,9 +1334,8 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
               {modoHospedes === 'lista' && (
                 <ListaHospedes
                   hospedes={hospedes}
-                  onVisualizar={visualizarHospede}
+                  onNovoHospede={abrirCadastroHospede}
                   onEditar={editarHospede}
-                  onExcluir={excluirHospede}
                 />
               )}
             </>
@@ -1103,8 +1346,9 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
               {modoReservas === 'lista' && (
                 <ListaReservas
                   reservas={reservas}
+                  pagamentos={pagamentos}
                   onNovaReserva={abrirNovaReserva}
-                  onExcluir={excluirReserva}
+                  onFaturarReservas={abrirFaturamentoReservas}
                   onVisualizarReserva={verHospedagemPeloPainel}
                 />
               )}
@@ -1150,6 +1394,8 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
               reservas={reservas}
               pagamentos={pagamentos}
               onAdicionarPagamento={abrirPagamento}
+              onExcluirPagamento={excluirPagamento}
+              onFaturarReservas={abrirFaturamentoReservas}
             />
           )}
         </section>
@@ -1162,6 +1408,31 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
           onAtualizarCampo={atualizarCampoPagamento}
           onFechar={fecharPagamento}
           onSalvar={salvarPagamento}
+        />
+      )}
+
+      {reservasFaturamento.length > 0 && faturamentoAtual && (
+        <ModalFaturamentoLote
+          reservas={reservasFaturamento}
+          faturamento={faturamentoAtual}
+          totalPendente={reservasFaturamento.reduce(
+            (total, reserva) => total + Number(reserva.valor_pendente || 0),
+            0,
+          )}
+          onAtualizarCampo={atualizarCampoFaturamento}
+          onFechar={fecharFaturamentoReservas}
+          onSalvar={salvarFaturamentoReservas}
+        />
+      )}
+
+      {faturamentoAvulso && (
+        <ModalFaturamentoAvulso
+          faturamento={faturamentoAvulso}
+          quartos={quartos}
+          onAtualizarCampo={atualizarCampoFaturamentoAvulso}
+          onAlternarQuarto={alternarQuartoFaturamentoAvulso}
+          onFechar={fecharFaturamentoAvulso}
+          onSalvar={salvarFaturamentoAvulso}
         />
       )}
 

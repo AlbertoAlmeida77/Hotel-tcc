@@ -14,9 +14,10 @@ const selectReservas = `
 
 async function listarReservas(req, res) {
     try {
-        const { situacao, data_entrada_de, data_entrada_ate } = req.query;
+        const { situacao, data_entrada_de, data_entrada_ate, incluir_historico } = req.query;
         const condicoes = [];
         const valores   = [];
+        const deveIncluirHistorico = String(incluir_historico || "").toLowerCase() === "true";
 
         if (situacao) {
             condicoes.push("reservas.situacao = ?");
@@ -29,6 +30,15 @@ async function listarReservas(req, res) {
         if (data_entrada_ate) {
             condicoes.push("reservas.data_entrada <= ?");
             valores.push(data_entrada_ate);
+        }
+        if (!deveIncluirHistorico && !situacao) {
+            condicoes.push(`
+                (
+                    reservas.situacao NOT IN ('finalizado', 'finalizada')
+                    OR reservas.finalizada_em IS NULL
+                    OR reservas.finalizada_em >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                )
+            `);
         }
 
         const where = condicoes.length > 0 ? `WHERE ${condicoes.join(" AND ")}` : "";
@@ -67,7 +77,7 @@ async function cadastrarReserva(req, res) {
         const [conflitos] = await pool.query(`
             SELECT id_reserva FROM reservas
             WHERE id_quarto = ?
-              AND situacao NOT IN ('cancelada', 'finalizada')
+              AND situacao NOT IN ('cancelado', 'cancelada', 'finalizado', 'finalizada')
               AND data_entrada < ?
               AND data_saida   > ?
         `, [id_quarto, data_saida, data_entrada]);
@@ -147,6 +157,23 @@ async function atualizarReserva(req, res) {
             });
         }
 
+        const [reservasAtuais] = await pool.query(
+            "SELECT situacao, finalizada_em FROM reservas WHERE id_reserva = ?",
+            [id]
+        );
+
+        if (reservasAtuais.length === 0) {
+            return res.status(404).json({ mensagem: "Reserva nao encontrada" });
+        }
+
+        const situacaoAnterior = reservasAtuais[0].situacao;
+        const finalizadaEmAnterior = reservasAtuais[0].finalizada_em;
+        const reservaFoiFinalizada = ["finalizado", "finalizada"].includes(situacao);
+        const reservaJaEstavaFinalizada = ["finalizado", "finalizada"].includes(situacaoAnterior);
+        const finalizadaEm = reservaFoiFinalizada
+            ? (reservaJaEstavaFinalizada && finalizadaEmAnterior ? finalizadaEmAnterior : new Date())
+            : null;
+
         const sql = `
             UPDATE reservas
             SET
@@ -159,7 +186,8 @@ async function atualizarReserva(req, res) {
                 cafe_manha   = ?,
                 adultos      = ?,
                 criancas     = ?,
-                observacao   = ?
+                observacao   = ?,
+                finalizada_em = ?
             WHERE id_reserva = ?
         `;
 
@@ -172,6 +200,7 @@ async function atualizarReserva(req, res) {
             adultos   || 1,
             criancas  || 0,
             observacao || null,
+            finalizadaEm,
             id
         ];
 
@@ -195,7 +224,11 @@ async function atualizarSituacaoReserva(req, res) {
         const { id } = req.params;
         const { situacao } = req.body;
 
-        const situacoesValidas = ["pendente", "ativa", "finalizada", "cancelada"];
+        const situacoesValidas = [
+            "pendente", "ativa", "finalizada", "cancelada",
+            "pre-reservar", "reservar", "hospedar", "em limpeza",
+            "finalizado", "no show", "cancelado", "bloquear datas"
+        ];
 
         if (!situacao || !situacoesValidas.includes(situacao)) {
             return res.status(400).json({
@@ -203,9 +236,20 @@ async function atualizarSituacaoReserva(req, res) {
             });
         }
 
+        const reservaFoiFinalizada = ["finalizado", "finalizada"].includes(situacao);
+
         const [resultado] = await pool.query(
-            "UPDATE reservas SET situacao = ? WHERE id_reserva = ?",
-            [situacao, id]
+            `
+                UPDATE reservas
+                SET
+                    situacao = ?,
+                    finalizada_em = CASE
+                        WHEN ? THEN COALESCE(finalizada_em, NOW())
+                        ELSE NULL
+                    END
+                WHERE id_reserva = ?
+            `,
+            [situacao, reservaFoiFinalizada, id]
         );
 
         if (resultado.affectedRows === 0) {
@@ -224,6 +268,21 @@ async function atualizarSituacaoReserva(req, res) {
 async function excluirReserva(req, res) {
     try {
         const { id } = req.params;
+
+        const [reservas] = await pool.query(
+            "SELECT situacao FROM reservas WHERE id_reserva = ?",
+            [id]
+        );
+
+        if (reservas.length === 0) {
+            return res.status(404).json({ mensagem: "Reserva nao encontrada" });
+        }
+
+        if (["finalizado", "finalizada"].includes(reservas[0].situacao)) {
+            return res.status(409).json({
+                mensagem: "Reservas finalizadas nao sao excluidas do banco; use os filtros de historico para consulta."
+            });
+        }
 
         const [resultado] = await pool.query(
             "DELETE FROM reservas WHERE id_reserva = ?",

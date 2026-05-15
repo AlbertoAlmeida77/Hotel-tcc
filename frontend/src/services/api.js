@@ -28,7 +28,7 @@ export async function buscarDadosDoServidor() {
   const [respostaQuartos, respostaHospedes, respostaReservas] = await Promise.all([
     fetchComTimeout(`${API_URL}/quartos`),
     fetchComTimeout(`${API_URL}/hospedes`),
-    fetchComTimeout(`${API_URL}/reservas`),
+    fetchComTimeout(`${API_URL}/reservas?incluir_historico=true`),
   ])
 
   if (!respostaQuartos.ok || !respostaHospedes.ok || !respostaReservas.ok) {

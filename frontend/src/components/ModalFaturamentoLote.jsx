@@ -5,18 +5,22 @@ import {
   formatarMoeda,
 } from '../services/financeiro'
 
-function ModalPagamento({
-  reserva,
-  pagamento,
+function ModalFaturamentoLote({
+  faturamento,
+  reservas,
+  totalPendente,
   onAtualizarCampo,
   onFechar,
   onSalvar,
 }) {
   return (
     <div className="modal-fundo" role="presentation">
-      <form className="modal-pagamento" onSubmit={onSalvar}>
+      <form className="modal-pagamento modal-faturamento-lote" onSubmit={onSalvar}>
         <div className="modal-cabecalho">
-          <h2>Novo pagamento</h2>
+          <div>
+            <h2>Faturar reservas</h2>
+            <span>{reservas.length} reserva(s) selecionada(s)</span>
+          </div>
           <button
             type="button"
             className="botao-icone"
@@ -29,10 +33,20 @@ function ModalPagamento({
 
         <div className="modal-corpo">
           <label className="campo-largo">
+            Faturar para
+            <input
+              name="faturarPara"
+              value={faturamento.faturarPara}
+              onChange={onAtualizarCampo}
+              placeholder="Ex: empresa, convenio, responsavel ou cliente"
+            />
+          </label>
+
+          <label className="campo-largo">
             * Descricao
             <input
               name="descricao"
-              value={pagamento.descricao}
+              value={faturamento.descricao}
               onChange={onAtualizarCampo}
               required
             />
@@ -43,11 +57,11 @@ function ModalPagamento({
               * Forma
               <select
                 name="forma"
-                value={pagamento.forma}
+                value={faturamento.forma}
                 onChange={onAtualizarCampo}
                 required
               >
-                <option value="">» selecione uma forma «</option>
+                <option value="">selecione uma forma</option>
                 {formasPagamento.map((forma) => (
                   <option value={forma} key={forma}>
                     {forma}
@@ -60,13 +74,12 @@ function ModalPagamento({
               * Conta
               <select
                 name="conta"
-                value={pagamento.conta}
+                value={faturamento.conta}
                 onChange={onAtualizarCampo}
                 required
               >
                 <option value="Conta padrao">Caixa Dinheiro</option>
                 <option value="Caixa">Conta Digital</option>
-            
               </select>
             </label>
 
@@ -74,7 +87,7 @@ function ModalPagamento({
               * Categoria
               <select
                 name="categoria"
-                value={pagamento.categoria}
+                value={faturamento.categoria}
                 onChange={onAtualizarCampo}
                 required
               >
@@ -91,7 +104,7 @@ function ModalPagamento({
               <input
                 type="date"
                 name="emissao"
-                value={pagamento.emissao}
+                value={faturamento.emissao}
                 onChange={onAtualizarCampo}
                 required
               />
@@ -102,20 +115,7 @@ function ModalPagamento({
               <input
                 type="date"
                 name="vencimento"
-                value={pagamento.vencimento}
-                onChange={onAtualizarCampo}
-                required
-              />
-            </label>
-
-            <label>
-              * Valor
-              <input
-                type="number"
-                name="valor"
-                min="0"
-                step="0.01"
-                value={pagamento.valor}
+                value={faturamento.vencimento}
                 onChange={onAtualizarCampo}
                 required
               />
@@ -126,27 +126,47 @@ function ModalPagamento({
             <input
               type="checkbox"
               name="concluido"
-              checked={pagamento.concluido}
+              checked={faturamento.concluido}
               onChange={onAtualizarCampo}
             />
-            Concluido?
+            Marcar como recebido?
           </label>
 
-          <p className="falta-lancar">
-            Falta lancar: {formatarMoeda(pagamento.valor)}
-          </p>
+          <section className="faturamento-lote-resumo">
+            <div className="orcamento-secao-topo">
+              <h3>Reservas no faturamento</h3>
+              <span>{formatarMoeda(totalPendente)}</span>
+            </div>
+
+            <div className="faturamento-lote-lista">
+              {reservas.map((reserva) => (
+                <div
+                  className="faturamento-lote-item"
+                  key={reserva.id_reserva}
+                >
+                  <span>
+                    <strong>{formatarCodigoReserva(reserva.id_reserva)}</strong>
+                    <small>
+                      Quarto {reserva.numero_quarto || '-'} -{' '}
+                      {reserva.nome_hospede || 'Hospede nao informado'}
+                    </small>
+                  </span>
+                  <b>{formatarMoeda(reserva.valor_pendente)}</b>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
 
         <div className="modal-rodape">
-          <span>
-            {formatarCodigoReserva(reserva.id_reserva)} - Quarto{' '}
-            {reserva.numero_quarto} - {reserva.nome_hospede}
-          </span>
-          <button type="submit">Adicionar pagamento</button>
+          <span>Total a faturar: {formatarMoeda(totalPendente)}</span>
+          <button type="submit" disabled={totalPendente <= 0}>
+            Gerar faturamento
+          </button>
         </div>
       </form>
     </div>
   )
 }
 
-export default ModalPagamento
+export default ModalFaturamentoLote

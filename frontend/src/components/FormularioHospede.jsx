@@ -5,6 +5,7 @@ function FormularioHospede({
   onAtualizarCampo,
   onCadastrarHospede,
   onCancelar,
+  onExcluir,
 }) {
   const editando = modo === 'editar'
 
@@ -90,6 +91,15 @@ function FormularioHospede({
       </div>
 
       <div className="acoes-formulario acoes-com-espaco">
+        {editando && (
+          <button
+            type="button"
+            className="botao-excluir"
+            onClick={() => onExcluir(novoHospede)}
+          >
+            Excluir hóspede
+          </button>
+        )}
         <button type="button" className="botao-secundario" onClick={onCancelar}>
           Cancelar
         </button>
@@ -97,7 +107,7 @@ function FormularioHospede({
           {salvandoHospede
             ? 'Salvando...'
             : editando
-              ? 'Salvar alteracoes'
+              ? 'Salvar mudanças'
               : 'Cadastrar hospede'}
         </button>
       </div>

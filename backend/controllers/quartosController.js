@@ -35,10 +35,10 @@ async function listarQuartosDisponiveis(req, res) {
 
         const sql = `
             SELECT * FROM quartos
-            WHERE status != 'manutencao'
+            WHERE status NOT IN ('manutencao', 'em limpeza', 'Em limpeza', 'bloqueado', 'Bloqueado')
             AND id_quarto NOT IN (
                 SELECT id_quarto FROM reservas
-                WHERE situacao NOT IN ('cancelada', 'finalizada')
+                WHERE situacao NOT IN ('cancelado', 'cancelada', 'finalizado', 'finalizada')
                 AND data_entrada < ?
                 AND data_saida   > ?
             )
@@ -155,7 +155,13 @@ async function atualizarStatusQuarto(req, res) {
         const { id } = req.params;
         const { status } = req.body;
 
-        const statusValidos = ["disponivel", "ocupado", "manutencao"];
+        const statusValidos = [
+            "disponivel",
+            "ocupado",
+            "em limpeza",
+            "bloqueado",
+            "manutencao"
+        ];
 
         if (!status || !statusValidos.includes(status)) {
             return res.status(400).json({

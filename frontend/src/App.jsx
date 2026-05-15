@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react'
+import Login from './components/Login'
 import MenuLateral from './components/MenuLateral'
 import PainelInicial from './pages/PainelInicial'
 import { descobrirPaginaPelaUrl, rotas } from './services/rotas'
 import './App.css'
 
+const chaveSessao = 'hotel-api-usuario'
+
 function App() {
+  const [usuarioLogado, setUsuarioLogado] = useState(() => {
+    const usuarioSalvo = localStorage.getItem(chaveSessao)
+
+    return usuarioSalvo ? JSON.parse(usuarioSalvo) : null
+  })
   const [localizacaoAtual, setLocalizacaoAtual] = useState(() =>
     `${window.location.pathname}${window.location.search}`,
   )
@@ -28,6 +36,18 @@ function App() {
     setLocalizacaoAtual(`${window.location.pathname}${window.location.search}`)
   }
 
+  function entrar(usuario) {
+    localStorage.setItem(chaveSessao, JSON.stringify(usuario))
+    setUsuarioLogado(usuario)
+  }
+
+  function sair() {
+    localStorage.removeItem(chaveSessao)
+    setUsuarioLogado(null)
+    window.history.pushState(null, '', rotas.painel)
+    setLocalizacaoAtual(`${window.location.pathname}${window.location.search}`)
+  }
+
   useEffect(() => {
     function voltarOuAvancarNoNavegador() {
       setLocalizacaoAtual(`${window.location.pathname}${window.location.search}`)
@@ -40,11 +60,17 @@ function App() {
     }
   }, [])
 
+  if (!usuarioLogado) {
+    return <Login onEntrar={entrar} />
+  }
+
   return (
     <div className="layout">
       <MenuLateral
         paginaAtual={paginaAtual}
         onMudarPagina={navegarPara}
+        onSair={sair}
+        usuario={usuarioLogado}
       />
 
       <PainelInicial

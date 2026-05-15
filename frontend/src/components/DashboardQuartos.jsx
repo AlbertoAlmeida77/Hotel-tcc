@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import logoHotelDestaque from '../assets/logo-hotel-destaque.png'
 import { formatarData } from '../services/financeiro'
 
 const indicadoresFixos = [
@@ -76,7 +77,9 @@ function reservaContaNoPainel(reserva) {
   return ![
     'bloquear datas',
     'cancelado',
+    'cancelada',
     'finalizado',
+    'finalizada',
   ].includes(situacao)
 }
 
@@ -92,17 +95,14 @@ function obterReservasDoQuarto(quarto, reservas) {
     .map((reserva) => ({
       ...reserva,
       entrada: criarDataLocal(reserva.data_entrada),
-      checkout: criarDataLocal(reserva.data_saida, 10),
-      fimLimpeza: criarDataLocal(reserva.data_saida, 12),
     }))
 }
 
 function obterEstadoDoQuarto(quarto, reservas, agora) {
   const reservasDoQuarto = obterReservasDoQuarto(quarto, reservas)
+  const statusManual = normalizarStatus(quarto.status)
   const reservaOcupada = reservasDoQuarto
-    .filter(
-      (reserva) => agora >= reserva.entrada && agora <= reserva.checkout,
-    )
+    .filter((reserva) => agora >= reserva.entrada)
     .sort((reservaA, reservaB) => reservaA.entrada - reservaB.entrada)[0]
 
   if (reservaOcupada) {
@@ -113,21 +113,13 @@ function obterEstadoDoQuarto(quarto, reservas, agora) {
     }
   }
 
-  const reservaEmLimpeza = reservasDoQuarto
-    .filter(
-      (reserva) => agora > reserva.checkout && agora <= reserva.fimLimpeza,
-    )
-    .sort((reservaA, reservaB) => reservaB.checkout - reservaA.checkout)[0]
-
-  if (reservaEmLimpeza) {
+  if (statusManual === 'em-limpeza') {
     return {
       status: 'em-limpeza',
       textoStatus: 'Limpeza',
-      reserva: reservaEmLimpeza,
+      reserva: null,
     }
   }
-
-  const statusManual = normalizarStatus(quarto.status)
 
   if (statusManual === 'bloqueado') {
     return {
@@ -194,6 +186,7 @@ function DashboardQuartos({
   onCriarHospedagem,
   onVerHospedagem,
   onAbrirCheckout,
+  onLiberarQuarto,
 }) {
   const [agora, setAgora] = useState(() => new Date())
   const totais = contarStatus(quartos, reservas, agora)
@@ -209,10 +202,15 @@ function DashboardQuartos({
   return (
     <>
       <section className="hero-dashboard">
-        <div>
+        <div className="hero-dashboard-conteudo">
           <span className="etiqueta-dashboard">Bem-vindo</span>
           <h2>Hotel Auto Posto Itaguari</h2>
           <p>Sistema de gestão de quartos, reservas e hóspedes.</p>
+        </div>
+        <div className="hero-logo-decorativa" aria-hidden="true">
+          <div className="hero-logo-glass">
+            <img src={logoHotelDestaque} alt="" />
+          </div>
         </div>
       </section>
 
@@ -244,6 +242,7 @@ function DashboardQuartos({
           )
           const estaOcupado = status === 'ocupado' && reserva
           const estaDisponivel = status === 'disponivel'
+          const estaEmLimpeza = status === 'em-limpeza'
           const observacao = reserva?.observacao || quarto.descricao || ''
           const periodoReserva = reserva
             ? `${formatarData(reserva.data_entrada)} - ${formatarData(
@@ -302,6 +301,17 @@ function DashboardQuartos({
                   >
                     <IconeCama />
                     Hospedar
+                  </button>
+                )}
+
+                {estaEmLimpeza && (
+                  <button
+                    type="button"
+                    className="botao-card-texto"
+                    onClick={() => onLiberarQuarto(quarto)}
+                  >
+                    <IconeCama />
+                    Liberar quarto
                   </button>
                 )}
 

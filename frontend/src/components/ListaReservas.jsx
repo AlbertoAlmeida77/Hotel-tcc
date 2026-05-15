@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import {
   calcularDiarias,
+  calcularTotalReserva,
   formatarCodigoReserva,
   formatarData,
+  formatarMoeda,
 } from '../services/financeiro'
 
 const filtrosSituacao = [
@@ -12,9 +14,16 @@ const filtrosSituacao = [
   { valor: 'hospedar', texto: 'Hospedado' },
   { valor: 'em limpeza', texto: 'Em limpeza' },
   { valor: 'finalizado', texto: 'Finalizado' },
+  { valor: 'no show', texto: 'No show' },
   { valor: 'cancelado', texto: 'Cancelado' },
   { valor: 'bloquear datas', texto: 'Bloqueado' },
+  { valor: 'historico', texto: 'Historico' },
 ]
+
+const filtrosPadrao = ['pre-reservar', 'reservar', 'hospedar', 'em limpeza']
+const filtrosSelecionaveis = filtrosSituacao
+  .filter((filtro) => filtro.valor !== 'todas')
+  .map((filtro) => filtro.valor)
 
 function normalizarTexto(texto) {
   return String(texto || '')
@@ -27,6 +36,10 @@ function obterClasseSituacao(situacao) {
   const situacaoNormalizada = normalizarTexto(situacao).replace(/\s+/g, '-')
 
   return `situacao-${situacaoNormalizada || 'padrao'}`
+}
+
+function reservaFinalizada(reserva) {
+  return ['finalizado', 'finalizada'].includes(normalizarTexto(reserva.situacao))
 }
 
 function IconeReserva({ tipo }) {
@@ -77,12 +90,14 @@ function IconeReserva({ tipo }) {
 
 function ListaReservas({
   reservas,
+  pagamentos,
   onNovaReserva,
+  onFaturarReservas,
   onVisualizarReserva,
-  onExcluir,
 }) {
   const [busca, setBusca] = useState('')
-  const [filtroSituacao, setFiltroSituacao] = useState('todas')
+  const [filtrosSelecionados, setFiltrosSelecionados] = useState(filtrosPadrao)
+  const [reservasSelecionadas, setReservasSelecionadas] = useState([])
 
   const reservasFiltradas = useMemo(() => {
     const buscaNormalizada = normalizarTexto(busca)
@@ -99,12 +114,106 @@ function ListaReservas({
         ].join(' '),
       )
       const passouBusca = textoReserva.includes(buscaNormalizada)
-      const passouSituacao =
-        filtroSituacao === 'todas' || reserva.situacao === filtroSituacao
+      const passouSituacao = (() => {
+        if (filtrosSelecionados.includes('historico') && reservaFinalizada(reserva)) {
+          return reservaFinalizada(reserva)
+        }
+
+        if (
+          filtrosSelecionados.includes('finalizado') &&
+          reservaFinalizada(reserva)
+        ) {
+          return true
+        }
+
+        return filtrosSelecionados.includes(reserva.situacao)
+      })()
 
       return passouBusca && passouSituacao
     })
-  }, [busca, filtroSituacao, reservas])
+  }, [busca, filtrosSelecionados, reservas])
+
+  const reservasSelecionadasFiltradas = reservasFiltradas.filter((reserva) =>
+    reservasSelecionadas.includes(String(reserva.id_reserva)),
+  )
+  const todasSelecionadas =
+    reservasFiltradas.length > 0 &&
+    reservasSelecionadasFiltradas.length === reservasFiltradas.length
+  const totalPendenteSelecionado = reservasSelecionadasFiltradas.reduce(
+    (total, reserva) => {
+      const totalReserva = calcularTotalReserva(reserva)
+      const recebido = pagamentos
+        .filter(
+          (pagamento) =>
+            Number(pagamento.id_reserva) === Number(reserva.id_reserva) &&
+            pagamento.concluido,
+        )
+        .reduce((soma, pagamento) => soma + Number(pagamento.valor || 0), 0)
+
+      return total + Math.max(totalReserva - recebido, 0)
+    },
+    0,
+  )
+
+  function alternarReservaSelecionada(idReserva) {
+    const idTratado = String(idReserva)
+
+    setReservasSelecionadas((selecionadasAtuais) =>
+      selecionadasAtuais.includes(idTratado)
+        ? selecionadasAtuais.filter((idAtual) => idAtual !== idTratado)
+        : [...selecionadasAtuais, idTratado],
+    )
+  }
+
+  function alternarTodasReservas() {
+    if (todasSelecionadas) {
+      setReservasSelecionadas((selecionadasAtuais) =>
+        selecionadasAtuais.filter(
+          (idAtual) =>
+            !reservasFiltradas.some(
+              (reserva) => String(reserva.id_reserva) === idAtual,
+            ),
+        ),
+      )
+      return
+    }
+
+    setReservasSelecionadas((selecionadasAtuais) => [
+      ...new Set([
+        ...selecionadasAtuais,
+        ...reservasFiltradas.map((reserva) => String(reserva.id_reserva)),
+      ]),
+    ])
+  }
+
+  function faturarSelecionadas() {
+    onFaturarReservas(reservasSelecionadasFiltradas)
+  }
+
+  function alternarFiltroSituacao(valor) {
+    if (valor === 'todas') {
+      setFiltrosSelecionados((filtrosAtuais) =>
+        filtrosAtuais.length === filtrosSelecionaveis.length
+          ? filtrosPadrao
+          : filtrosSelecionaveis,
+      )
+      return
+    }
+
+    setFiltrosSelecionados((filtrosAtuais) =>
+      filtrosAtuais.includes(valor)
+        ? filtrosAtuais.filter((filtroAtual) => filtroAtual !== valor)
+        : [...filtrosAtuais, valor],
+    )
+  }
+
+  function filtroEstaAtivo(valor) {
+    if (valor === 'todas') {
+      return filtrosSelecionados.length === filtrosSelecionaveis.length
+    }
+
+    return filtrosSelecionados.includes(valor)
+  }
 
   return (
     <div className="reservas-listagem">
@@ -130,6 +239,15 @@ function ListaReservas({
           <IconeReserva tipo="adicionar" />
           Nova reserva
         </button>
+
+        <button
+          type="button"
+          className="botao-com-icone botao-faturar-reservas"
+          disabled={reservasSelecionadasFiltradas.length === 0}
+          onClick={faturarSelecionadas}
+        >
+          Faturar selecionadas
+        </button>
       </div>
 
       <div className="filtros-reservas" aria-label="Filtrar por situacao">
@@ -137,12 +255,12 @@ function ListaReservas({
           <button
             type="button"
             className={
-              filtroSituacao === filtro.valor
+              filtroEstaAtivo(filtro.valor)
                 ? `filtro-reserva ativo ${obterClasseSituacao(filtro.valor)}`
                 : `filtro-reserva ${obterClasseSituacao(filtro.valor)}`
             }
             key={filtro.valor}
-            onClick={() => setFiltroSituacao(filtro.valor)}
+            onClick={() => alternarFiltroSituacao(filtro.valor)}
           >
             {filtro.texto}
           </button>
@@ -156,13 +274,24 @@ function ListaReservas({
             <span>{reservasFiltradas.length} exibidas</span>
           </div>
 
-
+          <div className="reservas-cabecalho-acoes">
+            <strong>{reservasSelecionadasFiltradas.length} selecionada(s)</strong>
+            <span>{formatarMoeda(totalPendenteSelecionado)} pendente</span>
+          </div>
         </div>
 
         <div className="tabela-reservas-wrap">
           <table className="tabela-reservas">
             <thead>
               <tr>
+                <th>
+                  <input
+                    type="checkbox"
+                    aria-label="Selecionar todas as reservas exibidas"
+                    checked={todasSelecionadas}
+                    onChange={alternarTodasReservas}
+                  />
+                </th>
                 <th>N°</th>
                 <th>Hospede</th>
                 <th>UH</th>
@@ -170,7 +299,6 @@ function ListaReservas({
                 <th>Check-out</th>
                 <th>Qtd.</th>
                 <th>Situacao</th>
-                <th>Acoes</th>
               </tr>
             </thead>
 
@@ -191,11 +319,21 @@ function ListaReservas({
                   key={reserva.id_reserva}
                 >
                   <td>
-                    <button
-                      type="button"
-                      className="link-reserva"
-                      onClick={() => onVisualizarReserva(reserva)}
-                    >
+                    <input
+                      type="checkbox"
+                      aria-label={`Selecionar ${formatarCodigoReserva(
+                        reserva.id_reserva,
+                      )}`}
+                      checked={reservasSelecionadas.includes(
+                        String(reserva.id_reserva),
+                      )}
+                      onChange={() =>
+                        alternarReservaSelecionada(reserva.id_reserva)
+                      }
+                    />
+                  </td>
+                  <td>
+                    <span className="codigo-reserva-tabela">
                       <span
                         className={`marcador-reserva ${obterClasseSituacao(
                           reserva.situacao,
@@ -203,9 +341,17 @@ function ListaReservas({
                         aria-hidden="true"
                       />
                       {formatarCodigoReserva(reserva.id_reserva)}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="link-reserva"
+                      onClick={() => onVisualizarReserva(reserva)}
+                    >
+                      {reserva.nome_hospede}
                     </button>
                   </td>
-                  <td>{reserva.nome_hospede}</td>
                   <td>Quarto {reserva.numero_quarto}</td>
                   <td>{formatarData(reserva.data_entrada)}</td>
                   <td>{formatarData(reserva.data_saida)}</td>
@@ -218,26 +364,6 @@ function ListaReservas({
                     >
                       {reserva.situacao}
                     </span>
-                  </td>
-                  <td>
-                    <div className="acoes-tabela-reservas">
-                      <button
-                        type="button"
-                        className="botao-pequeno botao-com-icone"
-                        onClick={() => onVisualizarReserva(reserva)}
-                      >
-                        <IconeReserva tipo="abrir" />
-                        Ver
-                      </button>
-                      <button
-                        type="button"
-                        className="botao-excluir botao-pequeno botao-com-icone"
-                        onClick={() => onExcluir(reserva)}
-                      >
-                        <IconeReserva tipo="excluir" />
-                        Excluir
-                      </button>
-                    </div>
                   </td>
                 </tr>
               ))}

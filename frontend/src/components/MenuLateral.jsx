@@ -50,6 +50,13 @@ function IconeMenu({ tipo }) {
         <path d="M6 19h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2Z" />
       </>
     ),
+    sair: (
+      <>
+        <path d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4" />
+        <path d="m15 8 4 4-4 4" />
+        <path d="M19 12H9" />
+      </>
+    ),
   }
 
   return (
@@ -59,7 +66,7 @@ function IconeMenu({ tipo }) {
   )
 }
 
-function MenuLateral({ paginaAtual, onMudarPagina }) {
+function MenuLateral({ paginaAtual, onMudarPagina, onSair, usuario }) {
   function navegar(evento, pagina) {
     evento.preventDefault()
     onMudarPagina(pagina)
@@ -90,6 +97,19 @@ function MenuLateral({ paginaAtual, onMudarPagina }) {
           </a>
         ))}
       </nav>
+
+      <div className="menu-usuario">
+        <div>
+          <span>Logado como</span>
+          <strong>{usuario?.nome || 'Gestor'}</strong>
+        </div>
+        <button type="button" className="nav-item botao-sair" onClick={onSair}>
+          <span className="nav-icone" aria-hidden="true">
+            <IconeMenu tipo="sair" />
+          </span>
+          Sair
+        </button>
+      </div>
     </aside>
   )
 }

@@ -1,12 +1,11 @@
 export const formasPagamento = [
-  'Dinheiro',
+   'Dinheiro',
+   'Pix',
   'Cartao de Credito',
   'Cartao de Debito',
-  'Boleto Bancario',
-  'Pix',
 ]
 
-export const categoriasTransacao = ['Hospedagem', 'Produto', 'Servico']
+export const categoriasTransacao = ['Hospedagem', 'Avulso']
 
 export function calcularDiarias(dataEntrada, dataSaida) {
   if (!dataEntrada || !dataSaida) {

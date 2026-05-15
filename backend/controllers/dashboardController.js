@@ -16,8 +16,8 @@ async function getDashboard(req, res) {
                 COUNT(*) AS total_reservas,
                 SUM(CASE WHEN situacao = 'ativa'       THEN 1 ELSE 0 END) AS reservas_ativas,
                 SUM(CASE WHEN situacao = 'pendente'    THEN 1 ELSE 0 END) AS reservas_pendentes,
-                SUM(CASE WHEN situacao = 'finalizada'  THEN 1 ELSE 0 END) AS reservas_finalizadas,
-                SUM(CASE WHEN situacao = 'cancelada'   THEN 1 ELSE 0 END) AS reservas_canceladas
+                SUM(CASE WHEN situacao IN ('finalizado', 'finalizada') THEN 1 ELSE 0 END) AS reservas_finalizadas,
+                SUM(CASE WHEN situacao IN ('cancelado', 'cancelada')   THEN 1 ELSE 0 END) AS reservas_canceladas
             FROM reservas
         `);
 
@@ -27,14 +27,14 @@ async function getDashboard(req, res) {
                     CASE
                         WHEN MONTH(data_entrada) = MONTH(CURDATE())
                          AND YEAR(data_entrada)  = YEAR(CURDATE())
-                         AND situacao != 'cancelada'
+                         AND situacao NOT IN ('cancelado', 'cancelada')
                         THEN DATEDIFF(data_saida, data_entrada) * valor_diaria
                         ELSE 0
                     END
                 ) AS receita_mes,
                 SUM(
                     CASE
-                        WHEN situacao != 'cancelada'
+                        WHEN situacao NOT IN ('cancelado', 'cancelada')
                         THEN DATEDIFF(data_saida, data_entrada) * valor_diaria
                         ELSE 0
                     END
@@ -45,13 +45,13 @@ async function getDashboard(req, res) {
         const [[agendaStats]] = await pool.query(`
             SELECT
                 SUM(CASE WHEN DATE(data_entrada) = CURDATE()
-                          AND situacao NOT IN ('cancelada','finalizada') THEN 1 ELSE 0 END) AS entradas_hoje,
+                          AND situacao NOT IN ('cancelado','cancelada','finalizado','finalizada') THEN 1 ELSE 0 END) AS entradas_hoje,
                 SUM(CASE WHEN DATE(data_saida)   = CURDATE()
-                          AND situacao NOT IN ('cancelada','finalizada') THEN 1 ELSE 0 END) AS saidas_hoje,
+                          AND situacao NOT IN ('cancelado','cancelada','finalizado','finalizada') THEN 1 ELSE 0 END) AS saidas_hoje,
                 SUM(CASE WHEN data_entrada BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-                          AND situacao NOT IN ('cancelada','finalizada') THEN 1 ELSE 0 END) AS entradas_proximos_7_dias,
+                          AND situacao NOT IN ('cancelado','cancelada','finalizado','finalizada') THEN 1 ELSE 0 END) AS entradas_proximos_7_dias,
                 SUM(CASE WHEN data_saida   BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-                          AND situacao NOT IN ('cancelada','finalizada') THEN 1 ELSE 0 END) AS saidas_proximos_7_dias
+                          AND situacao NOT IN ('cancelado','cancelada','finalizado','finalizada') THEN 1 ELSE 0 END) AS saidas_proximos_7_dias
             FROM reservas
         `);
 
