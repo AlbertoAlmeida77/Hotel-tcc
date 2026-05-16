@@ -29,6 +29,37 @@ function obterStatusPagamento(total, recebido) {
   }
 }
 
+function IconeAcaoTransacao({ tipo }) {
+  const icones = {
+    check: (
+      <>
+        <path d="M20 6 9 17l-5-5" />
+      </>
+    ),
+    receber: (
+      <>
+        <path d="M12 2v20" />
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6" />
+      </>
+    ),
+    lixeira: (
+      <>
+        <path d="M3 6h18" />
+        <path d="M8 6V4h8v2" />
+        <path d="M19 6 18 20H6L5 6" />
+        <path d="M10 11v5" />
+        <path d="M14 11v5" />
+      </>
+    ),
+  }
+
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      {icones[tipo]}
+    </svg>
+  )
+}
+
 function Transacoes({
   reservas,
   pagamentos,
@@ -198,6 +229,12 @@ function Transacoes({
                   totalReserva,
                   recebidoReserva,
                 )
+                const pagamentoConcluido =
+                  pendenteReserva <= 0 || status.classe === 'pago'
+                const textoAcao =
+                  status.classe === 'parcial'
+                    ? 'Receber restante'
+                    : 'Registrar pagamento'
 
                 return (
                   <tr
@@ -236,13 +273,21 @@ function Transacoes({
                       </span>
                     </td>
                     <td className="acao-transacao">
-                      <button
-                        type="button"
-                        className="botao-pequeno"
-                        onClick={() => onAdicionarPagamento(reserva)}
-                      >
-                        Registrar pagamento
-                      </button>
+                      {pagamentoConcluido ? (
+                        <span className="acao-transacao-concluida">
+                          <IconeAcaoTransacao tipo="check" />
+                          Concluido
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="botao-acao-transacao"
+                          onClick={() => onAdicionarPagamento(reserva)}
+                        >
+                          <IconeAcaoTransacao tipo="receber" />
+                          {textoAcao}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )
@@ -303,10 +348,12 @@ function Transacoes({
 
               <button
                 type="button"
-                className="botao-excluir botao-pequeno"
+                className="botao-icone botao-excluir-transacao"
+                aria-label={`Excluir ${pagamento.descricao}`}
+                title="Excluir"
                 onClick={() => onExcluirPagamento(pagamento)}
               >
-                Excluir
+                <IconeAcaoTransacao tipo="lixeira" />
               </button>
             </article>
           ))}

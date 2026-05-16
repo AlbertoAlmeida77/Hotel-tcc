@@ -25,10 +25,10 @@ import {
   excluirQuartoNoServidor,
 } from '../services/api'
 import {
-  calcularDiarias,
   calcularTotalReserva,
   criarPagamentoDaReserva,
   formatarDataCampo,
+  formatarMoeda,
 } from '../services/financeiro'
 import {
   baixarPdfFaturamentoAvulso,
@@ -64,6 +64,38 @@ const reservaVazia = {
   adultos: '1',
   criancas: '0',
   observacao: '',
+}
+
+function reservaEstaFinalizada(reserva) {
+  return ['finalizado', 'finalizada'].includes(
+    String(reserva?.situacao || '').toLowerCase(),
+  )
+}
+
+function sincronizarPagamentosComReservasFinalizadas(reservas, pagamentos) {
+  let houveAlteracao = false
+  const pagamentosSincronizados = pagamentos.map((pagamento) => {
+    const reserva = reservas.find(
+      (reservaAtual) =>
+        Number(reservaAtual.id_reserva) === Number(pagamento.id_reserva),
+    )
+
+    if (!reservaEstaFinalizada(reserva) || pagamento.concluido) {
+      return pagamento
+    }
+
+    houveAlteracao = true
+    return {
+      ...pagamento,
+      concluido: true,
+    }
+  })
+
+  if (!houveAlteracao) {
+    return pagamentos
+  }
+
+  return pagamentosSincronizados
 }
 
 const textosPaginas = {
@@ -634,65 +666,6 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
     }))
   }
 
-  function atualizarCampoFaturamentoAvulso(evento) {
-    const { checked, name, type, value } = evento.target
-
-    setFaturamentoAvulso((faturamento) =>
-      prepararFaturamentoAvulso({
-        ...faturamento,
-        [name]: type === 'checkbox' ? checked : value,
-      }),
-    )
-  }
-
-  function calcularTotalQuartosFaturamento(faturamento) {
-    return quartos
-      .filter((quarto) =>
-        faturamento.quartosSelecionados.includes(String(quarto.id_quarto)),
-      )
-      .reduce(
-        (total, quarto) =>
-          total +
-          Number(quarto.valor_diaria || 0) * Number(faturamento.diarias || 0),
-        0,
-      )
-  }
-
-  function prepararFaturamentoAvulso(faturamento) {
-    const diarias =
-      calcularDiarias(faturamento.dataEntrada, faturamento.dataSaida) || 0
-    const proximoFaturamento = {
-      ...faturamento,
-      diarias,
-    }
-
-    if (proximoFaturamento.quartosSelecionados.length > 0) {
-      proximoFaturamento.valor =
-        calcularTotalQuartosFaturamento(proximoFaturamento).toFixed(2)
-    }
-
-    return proximoFaturamento
-  }
-
-  function alternarQuartoFaturamentoAvulso(idQuarto) {
-    const idTratado = String(idQuarto)
-
-    setFaturamentoAvulso((faturamento) => {
-      const jaSelecionado =
-        faturamento.quartosSelecionados.includes(idTratado)
-      const quartosSelecionados = jaSelecionado
-        ? faturamento.quartosSelecionados.filter(
-            (idAtual) => idAtual !== idTratado,
-          )
-        : [...faturamento.quartosSelecionados, idTratado]
-
-      return prepararFaturamentoAvulso({
-        ...faturamento,
-        quartosSelecionados,
-      })
-    })
-  }
-
   function salvarPagamento(evento) {
     evento.preventDefault()
 
@@ -772,23 +745,16 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
     mostrarMensagemQuarto('Faturamento gerado e PDF baixado com sucesso.')
   }
 
-  function salvarFaturamentoAvulso(evento) {
-    evento.preventDefault()
+  function salvarFaturamentoAvulso(faturamento) {
+    const valorFaturamento = Number(faturamento.total_final || 0)
 
-    const valorFaturamento = Number(faturamentoAvulso.valor || 0)
-    const quartosFaturados = quartos
-      .filter((quarto) =>
-        faturamentoAvulso.quartosSelecionados.includes(String(quarto.id_quarto)),
-      )
-      .map((quarto) => ({
-        id_quarto: quarto.id_quarto,
-        numero: quarto.numero,
-        tipo: quarto.tipo,
-        valor_diaria: quarto.valor_diaria,
-      }))
+    if (!faturamento.id_hospede) {
+      setErro('Selecione um hospede para finalizar o faturamento.')
+      return
+    }
 
-    if (quartosFaturados.length > 0 && Number(faturamentoAvulso.diarias) <= 0) {
-      setErro('Informe entrada e saida validas para faturar quartos.')
+    if (!faturamento.itens?.length) {
+      setErro('Adicione pelo menos um quarto ao faturamento.')
       return
     }
 
@@ -797,20 +763,32 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
       return
     }
 
-    const descricaoDestino = faturamentoAvulso.faturarPara
-      ? `${faturamentoAvulso.descricao} - ${faturamentoAvulso.faturarPara}`
-      : faturamentoAvulso.descricao
+    const quartosFaturados = faturamento.itensCarrinho.map((item) => ({
+      id_quarto: item.id_quarto,
+      numero: item.numero_quarto,
+      tipo: item.tipo_quarto,
+      valor_diaria: item.valor_diaria,
+      data_entrada: item.data_entrada,
+      data_saida: item.data_saida,
+      diarias: item.quantidade_diarias,
+      subtotal: item.subtotal,
+    }))
+
+    const primeiroItem = faturamento.itensCarrinho[0]
+    const ultimoItem = faturamento.itensCarrinho[faturamento.itensCarrinho.length - 1]
 
     const novoPagamento = {
-      ...faturamentoAvulso,
+      ...faturamento,
       id: crypto.randomUUID(),
       id_reserva: null,
       tipo: 'avulso',
-      descricao: descricaoDestino,
       quartos_faturados: quartosFaturados,
-      data_entrada: faturamentoAvulso.dataEntrada,
-      data_saida: faturamentoAvulso.dataSaida,
-      diarias: faturamentoAvulso.diarias,
+      data_entrada: primeiroItem?.data_entrada,
+      data_saida: ultimoItem?.data_saida,
+      diarias: faturamento.itens.reduce(
+        (total, item) => total + Number(item.quantidade_diarias || 0),
+        0,
+      ),
       valor: valorFaturamento,
     }
 
@@ -848,6 +826,16 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
 
     if (!quarto) {
       setErro('Quarto da reserva nao encontrado.')
+      return
+    }
+
+    const valorPendente = calcularValorPendenteReserva(reserva)
+
+    if (valorPendente > 0) {
+      setErro(
+        `Antes de finalizar o checkout, registre o acerto restante de ${formatarMoeda(valorPendente)}.`,
+      )
+      abrirPagamento(reserva)
       return
     }
 
@@ -971,7 +959,7 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
       } else {
         setReservaSelecionada(reservaSalva || null)
       }
-      mostrarMensagemQuarto('Reserva atualizada com sucesso.')
+      mostrarMensagemQuarto('Reserva foi atualizada com sucesso.')
     } catch (erroAtual) {
       setErro(erroAtual.message)
     }
@@ -1026,6 +1014,12 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
   useEffect(() => {
     localStorage.setItem('hotel-tcc-pagamentos', JSON.stringify(pagamentos))
   }, [pagamentos])
+
+  useEffect(() => {
+    setPagamentos((pagamentosAtuais) =>
+      sincronizarPagamentosComReservasFinalizadas(reservas, pagamentosAtuais),
+    )
+  }, [reservas])
 
   useEffect(() => {
     const parametros = new URLSearchParams(localizacaoAtual.split('?')[1] || '')
@@ -1175,7 +1169,7 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
           <h1>{textoPagina.titulo}</h1>
           <p>{textoPagina.descricao}</p>
         </div>
-        {paginaAtual === 'transacoes' && (
+        {['reservas', 'transacoes'].includes(paginaAtual) && (
           <div className="topo-acoes">
             <button
               type="button"
@@ -1378,7 +1372,6 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
                   )}
                   onAdicionarPagamento={abrirPagamento}
                   onAtualizarReserva={salvarAlteracoesReserva}
-                  onCancelar={voltarParaListaReservas}
                   onCancelarReserva={cancelarReserva}
                   onExcluirPagamento={excluirPagamento}
                   onFinalizarCheckout={finalizarCheckout}
@@ -1428,9 +1421,8 @@ function PainelInicial({ paginaAtual, localizacaoAtual, onMudarPagina }) {
       {faturamentoAvulso && (
         <ModalFaturamentoAvulso
           faturamento={faturamentoAvulso}
+          hospedes={hospedes}
           quartos={quartos}
-          onAtualizarCampo={atualizarCampoFaturamentoAvulso}
-          onAlternarQuarto={alternarQuartoFaturamentoAvulso}
           onFechar={fecharFaturamentoAvulso}
           onSalvar={salvarFaturamentoAvulso}
         />

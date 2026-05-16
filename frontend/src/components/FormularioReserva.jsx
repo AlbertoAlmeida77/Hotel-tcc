@@ -156,16 +156,6 @@ function FormularioReserva({
               />
             </label>
 
-            <label className="switch-campo">
-              Cafe da manha
-              <input
-                type="checkbox"
-                name="cafe_manha"
-                checked={reserva.cafe_manha}
-                onChange={onAtualizarCampo}
-              />
-            </label>
-
             <label className="campo-largo">
               Observacao
               <textarea

@@ -23,11 +23,42 @@ function criarFormulario(reserva) {
     data_entrada: String(reserva.data_entrada || '').slice(0, 10),
     data_saida: String(reserva.data_saida || '').slice(0, 10),
     valor_diaria: reserva.valor_diaria || '',
-    cafe_manha: Boolean(reserva.cafe_manha),
     adultos: String(reserva.adultos || 1),
     criancas: String(reserva.criancas || 0),
     observacao: reserva.observacao || '',
   }
+}
+
+function IconeAcaoReserva({ tipo }) {
+  const icones = {
+    cancelar: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="m5.8 5.8 12.4 12.4" />
+      </>
+    ),
+    finalizar: (
+      <>
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+        <path d="m10 17 5-5-5-5" />
+        <path d="M15 12H3" />
+      </>
+    ),
+    atualizar: (
+      <>
+        <path d="M21 12a9 9 0 0 1-15.5 6.2" />
+        <path d="M3 12a9 9 0 0 1 15.5-6.2" />
+        <path d="M18 2v4h-4" />
+        <path d="M6 22v-4h4" />
+      </>
+    ),
+  }
+
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      {icones[tipo]}
+    </svg>
+  )
 }
 
 function DetalhesReserva({
@@ -37,7 +68,6 @@ function DetalhesReserva({
   pagamentos,
   onAdicionarPagamento,
   onAtualizarReserva,
-  onCancelar,
   onCancelarReserva,
   onExcluirPagamento,
   onFinalizarCheckout,
@@ -94,7 +124,7 @@ function DetalhesReserva({
 
   function salvarAlteracoes(evento) {
     evento.preventDefault()
-    onAtualizarReserva(formulario)
+    onAtualizarReserva(formulario, { voltarParaLista: false })
   }
 
   return (
@@ -237,17 +267,6 @@ function DetalhesReserva({
                 />
               </label>
 
-              <label className="switch-campo">
-                Café da manhã
-                <input
-                  type="checkbox"
-                  name="cafe_manha"
-                  checked={formulario.cafe_manha}
-                  onChange={atualizarCampo}
-                  disabled={camposBloqueados}
-                />
-              </label>
-
               <label className="campo-largo">
                 Observação
                 <textarea
@@ -271,32 +290,31 @@ function DetalhesReserva({
                 </button>
               ) : (
                 <>
-                  <button type="submit">
-                    Salvar alteracoes
-                  </button>
                   <button
                     type="button"
-                    className="botao-hospedar-reserva"
-                    disabled={reservaFinalizada}
-                    onClick={() => onFinalizarCheckout(reserva)}
-                    title="Finalizar checkout"
-                  >
-                    Dar checkout
-                  </button>
-                  <button
-                    type="button"
-                    className="botao-excluir"
+                    className="botao-acao-reserva botao-reserva-cancelar"
                     disabled={reservaFinalizada}
                     onClick={() => onCancelarReserva(reserva)}
                   >
-                    Cancelar reserva
+                    <IconeAcaoReserva tipo="cancelar" />
+                    Cancelar
                   </button>
                   <button
                     type="button"
-                    className="botao-secundario"
-                    onClick={onCancelar}
+                    className="botao-acao-reserva botao-reserva-finalizar"
+                    disabled={reservaFinalizada}
+                    onClick={() => onFinalizarCheckout(reserva)}
+                    title="Finalizar reserva"
                   >
-                    Voltar
+                    <IconeAcaoReserva tipo="finalizar" />
+                    Finalizar
+                  </button>
+                  <button
+                    type="submit"
+                    className="botao-acao-reserva botao-reserva-atualizar"
+                  >
+                    <IconeAcaoReserva tipo="atualizar" />
+                    Atualizar Reserva
                   </button>
                 </>
               )}

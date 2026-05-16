@@ -42,6 +42,22 @@ function reservaFinalizada(reserva) {
   return ['finalizado', 'finalizada'].includes(normalizarTexto(reserva.situacao))
 }
 
+function obterTextoSituacao(situacao) {
+  const textos = {
+    'pre-reservar': 'Pre-reservado',
+    reservar: 'Reservado',
+    hospedar: 'Hospedado',
+    'em limpeza': 'Em limpeza',
+    finalizado: 'Finalizado',
+    finalizada: 'Finalizado',
+    'no show': 'No show',
+    cancelado: 'Cancelado',
+    'bloquear datas': 'Bloqueado',
+  }
+
+  return textos[normalizarTexto(situacao)] || situacao || '-'
+}
+
 function IconeReserva({ tipo }) {
   const icones = {
     busca: (
@@ -292,7 +308,6 @@ function ListaReservas({
                     onChange={alternarTodasReservas}
                   />
                 </th>
-                <th>N°</th>
                 <th>Hospede</th>
                 <th>UH</th>
                 <th>Check-in</th>
@@ -305,7 +320,7 @@ function ListaReservas({
             <tbody>
               {reservasFiltradas.length === 0 && (
                 <tr>
-                  <td colSpan="8" className="tabela-vazia">
+                  <td colSpan="7" className="tabela-vazia">
                     Nenhuma reserva encontrada.
                   </td>
                 </tr>
@@ -333,17 +348,6 @@ function ListaReservas({
                     />
                   </td>
                   <td>
-                    <span className="codigo-reserva-tabela">
-                      <span
-                        className={`marcador-reserva ${obterClasseSituacao(
-                          reserva.situacao,
-                        )}`}
-                        aria-hidden="true"
-                      />
-                      {formatarCodigoReserva(reserva.id_reserva)}
-                    </span>
-                  </td>
-                  <td>
                     <button
                       type="button"
                       className="link-reserva"
@@ -362,7 +366,7 @@ function ListaReservas({
                         reserva.situacao,
                       )}`}
                     >
-                      {reserva.situacao}
+                      {obterTextoSituacao(reserva.situacao)}
                     </span>
                   </td>
                 </tr>

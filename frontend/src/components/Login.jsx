@@ -127,9 +127,45 @@ function Login({ onEntrar }) {
       </section>
 
       <aside className="login-destaque" aria-hidden="true">
-        <div>
+        <div className="login-destaque-conteudo">
+          <span className="login-destaque-etiqueta">Painel inteligente</span>
           <strong>Gestao hoteleira</strong>
           <span>Quartos, reservas, hospedes e financeiro em um unico painel.</span>
+        </div>
+
+        <div className="login-dashboard-preview">
+          <div className="login-metrica login-metrica-grande">
+            <span>Ocupacao</span>
+            <strong>78%</strong>
+            <div className="login-barra">
+              <i style={{ width: '78%' }} />
+            </div>
+          </div>
+
+          <div className="login-metrica">
+            <span>Quartos disponiveis</span>
+            <strong>15</strong>
+          </div>
+
+          <div className="login-metrica">
+            <span>Reservas de hoje</span>
+            <strong>28</strong>
+          </div>
+
+          <div className="login-metrica">
+            <span>Hospedes hospedados</span>
+            <strong>42</strong>
+          </div>
+
+          <div className="login-metrica login-metrica-receita">
+            <span>Receita do dia</span>
+            <strong>R$ 7.680,00</strong>
+          </div>
+
+          <div className="login-card-flutuante">
+            <span>Check-ins</span>
+            <strong>12 previstos</strong>
+          </div>
         </div>
       </aside>
     </main>

@@ -260,7 +260,13 @@ function criarDocumentoPdf() {
       paginas.push(comandos.join('\n'))
     }
 
-    const objetos = ['']
+    const objetos = [
+      '',
+      '<< /Type /Catalog /Pages 2 0 R >>',
+      '',
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>',
+    ]
     const paginasIds = []
 
     paginas.forEach((conteudo) => {
@@ -273,12 +279,9 @@ function criarDocumentoPdf() {
       )
     })
 
-    objetos[1] = '<< /Type /Catalog /Pages 2 0 R >>'
     objetos[2] = `<< /Type /Pages /Kids [${paginasIds
       .map((id) => `${id} 0 R`)
       .join(' ')}] /Count ${paginasIds.length} >>`
-    objetos[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'
-    objetos[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>'
 
     const partes = ['%PDF-1.4\n']
     const offsets = [0]
@@ -375,16 +378,21 @@ export function baixarPdfFaturamentoReservas({ faturamento, reservas, pagamentos
 export function baixarPdfFaturamentoAvulso({ faturamento }) {
   const pdf = criarDocumentoPdf()
   const quartos = faturamento.quartos_faturados || []
+  const itens = faturamento.itens || []
+  const quantidadeItens = itens.length || quartos.length || 1
+  const subtotalGeral = Number(faturamento.subtotal_geral || faturamento.valor || 0)
+  const desconto = Number(faturamento.desconto || 0)
+  const totalFinal = Number(faturamento.total_final || faturamento.valor || 0)
 
   pdf.desenharCabecalho(
     'Faturamento avulso',
     `Documento gerado em ${formatarData(new Date().toISOString())}`,
   )
   pdf.blocoResumo([
-    { rotulo: 'Itens', valor: String(Math.max(quartos.length, 1)) },
+    { rotulo: 'Itens', valor: String(quantidadeItens) },
     {
       rotulo: 'Total faturado',
-      valor: formatarMoeda(faturamento.valor),
+      valor: formatarMoeda(totalFinal),
       destaque: true,
     },
     { rotulo: 'Status', valor: faturamento.concluido ? 'Recebido' : 'Pendente' },
@@ -396,9 +404,32 @@ export function baixarPdfFaturamentoAvulso({ faturamento }) {
     { rotulo: 'Conta', valor: faturamento.conta },
     { rotulo: 'Emissao', valor: formatarData(faturamento.emissao) },
     { rotulo: 'Vencimento', valor: formatarData(faturamento.vencimento) },
+    { rotulo: 'Subtotal geral', valor: formatarMoeda(subtotalGeral) },
+    { rotulo: 'Desconto', valor: formatarMoeda(desconto) },
   ])
 
-  if (quartos.length > 0) {
+  if (itens.length > 0) {
+    pdf.tabela(
+      'Itens do faturamento',
+      [
+        { titulo: 'Quarto', chave: 'quarto', largura: 0.17 },
+        { titulo: 'Periodo', chave: 'periodo', largura: 0.28 },
+        { titulo: 'Pessoas', chave: 'pessoas', largura: 0.18 },
+        { titulo: 'Diarias', chave: 'diarias', largura: 0.12 },
+        { titulo: 'Subtotal', chave: 'subtotal', largura: 0.25 },
+      ],
+      itens.map((item) => ({
+        quarto: `Quarto ${
+          quartos.find((quarto) => Number(quarto.id_quarto) === Number(item.id_quarto))
+            ?.numero || item.id_quarto || '-'
+        }`,
+        periodo: `${formatarData(item.data_entrada)} ate ${formatarData(item.data_saida)}`,
+        pessoas: `${item.adultos || 0} adulto(s), ${item.criancas || 0} crianca(s)`,
+        diarias: String(item.quantidade_diarias || 0),
+        subtotal: formatarMoeda(item.subtotal),
+      })),
+    )
+  } else if (quartos.length > 0) {
     pdf.tabela(
       'Quartos faturados',
       [
@@ -411,12 +442,14 @@ export function baixarPdfFaturamentoAvulso({ faturamento }) {
       quartos.map((quarto) => ({
         quarto: `Quarto ${quarto.numero || '-'}`,
         tipo: quarto.tipo || 'Nao informado',
-        periodo: `${formatarData(faturamento.data_entrada)} ate ${formatarData(
-          faturamento.data_saida,
+        periodo: `${formatarData(quarto.data_entrada || faturamento.data_entrada)} ate ${formatarData(
+          quarto.data_saida || faturamento.data_saida,
         )}`,
-        diarias: String(faturamento.diarias || 0),
+        diarias: String(quarto.diarias || faturamento.diarias || 0),
         valor: formatarMoeda(
-          Number(quarto.valor_diaria || 0) * Number(faturamento.diarias || 0),
+          quarto.subtotal ||
+            Number(quarto.valor_diaria || 0) *
+              Number(quarto.diarias || faturamento.diarias || 0),
         ),
       })),
     )
