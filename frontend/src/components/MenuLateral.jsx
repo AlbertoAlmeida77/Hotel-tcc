@@ -57,6 +57,14 @@ function IconeMenu({ tipo }) {
         <path d="M19 12H9" />
       </>
     ),
+    usuarios: (
+      <>
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M19 8v6" />
+        <path d="M22 11h-6" />
+      </>
+    ),
   }
 
   return (
@@ -66,7 +74,19 @@ function IconeMenu({ tipo }) {
   )
 }
 
-function MenuLateral({ paginaAtual, onMudarPagina, onSair, usuario }) {
+function MenuLateral({
+  paginaAtual,
+  onGerenciarUsuarios,
+  onMudarPagina,
+  onSair,
+  podeGerenciarUsuarios,
+  podeVerTransacoes,
+  usuario,
+}) {
+  const itensVisiveis = itensMenu.filter(
+    (item) => item.id !== 'transacoes' || podeVerTransacoes,
+  )
+
   function navegar(evento, pagina) {
     evento.preventDefault()
     onMudarPagina(pagina)
@@ -83,7 +103,7 @@ function MenuLateral({ paginaAtual, onMudarPagina, onSair, usuario }) {
       </div>
 
       <nav className="navegacao" aria-label="Menu principal">
-        {itensMenu.map((item) => (
+        {itensVisiveis.map((item) => (
           <a
             className={paginaAtual === item.id ? 'nav-item ativo' : 'nav-item'}
             href={rotas[item.id]}
@@ -103,6 +123,18 @@ function MenuLateral({ paginaAtual, onMudarPagina, onSair, usuario }) {
           <span>Logado como</span>
           <strong>{usuario?.nome || 'Gestor'}</strong>
         </div>
+        {podeGerenciarUsuarios && (
+          <button
+            type="button"
+            className="nav-item botao-gerenciar-usuarios"
+            onClick={onGerenciarUsuarios}
+          >
+            <span className="nav-icone" aria-hidden="true">
+              <IconeMenu tipo="usuarios" />
+            </span>
+            Usuarios
+          </button>
+        )}
         <button type="button" className="nav-item botao-sair" onClick={onSair}>
           <span className="nav-icone" aria-hidden="true">
             <IconeMenu tipo="sair" />

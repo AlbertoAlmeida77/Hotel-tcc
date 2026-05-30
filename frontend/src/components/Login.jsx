@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import logoHotelDestaque from '../assets/logo-hotel-destaque.png'
-
-const usuarioPermitido = import.meta.env.VITE_LOGIN_USUARIO || 'admin'
-const senhaPermitida = import.meta.env.VITE_LOGIN_SENHA || 'admin123'
+import { autenticarUsuario } from '../services/usuarios'
 
 function IconeLogin({ tipo }) {
   const icones = {
@@ -61,15 +59,15 @@ function Login({ onEntrar }) {
       return
     }
 
-    if (usuario !== usuarioPermitido || senha !== senhaPermitida) {
+    const usuarioAutenticado = autenticarUsuario(usuario, senha)
+
+    if (!usuarioAutenticado) {
       setErro('Usuario ou senha incorretos.')
       return
     }
 
     setErro('')
-    onEntrar({
-      nome: usuario,
-    })
+    onEntrar(usuarioAutenticado)
   }
 
   return (

@@ -1,7 +1,10 @@
 const pool = require("../config/db");
+const atualizarHospedagensVencidas = require("../services/atualizarHospedagensVencidas");
 
 async function getDashboard(req, res) {
     try {
+        await atualizarHospedagensVencidas(pool);
+
         const [[quartosStats]] = await pool.query(`
             SELECT
                 COUNT(*) AS total_quartos,

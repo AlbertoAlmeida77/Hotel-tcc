@@ -67,6 +67,10 @@ function criarDataLocal(data, hora = 0) {
   return new Date(ano, mes - 1, dia, hora, 0, 0, 0)
 }
 
+function criarHorarioSaida(data) {
+  return criarDataLocal(data, 12)
+}
+
 function reservaContaNoPainel(reserva) {
   const situacao = String(reserva.situacao || '')
     .toLowerCase()
@@ -95,6 +99,7 @@ function obterReservasDoQuarto(quarto, reservas) {
     .map((reserva) => ({
       ...reserva,
       entrada: criarDataLocal(reserva.data_entrada),
+      saida: criarHorarioSaida(reserva.data_saida),
     }))
 }
 
@@ -102,7 +107,7 @@ function obterEstadoDoQuarto(quarto, reservas, agora) {
   const reservasDoQuarto = obterReservasDoQuarto(quarto, reservas)
   const statusManual = normalizarStatus(quarto.status)
   const reservaOcupada = reservasDoQuarto
-    .filter((reserva) => agora >= reserva.entrada)
+    .filter((reserva) => agora >= reserva.entrada && agora < reserva.saida)
     .sort((reservaA, reservaB) => reservaA.entrada - reservaB.entrada)[0]
 
   if (reservaOcupada) {

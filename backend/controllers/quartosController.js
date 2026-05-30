@@ -1,7 +1,10 @@
 const pool = require("../config/db");
+const atualizarHospedagensVencidas = require("../services/atualizarHospedagensVencidas");
 
 async function listarQuartos(req, res) {
     try {
+        await atualizarHospedagensVencidas(pool);
+
         const { status } = req.query;
         let sql = "SELECT * FROM quartos";
         const valores = [];
@@ -25,6 +28,8 @@ async function listarQuartos(req, res) {
 
 async function listarQuartosDisponiveis(req, res) {
     try {
+        await atualizarHospedagensVencidas(pool);
+
         const { data_entrada, data_saida } = req.query;
 
         if (!data_entrada || !data_saida) {
@@ -90,6 +95,8 @@ async function cadastrarQuarto(req, res) {
 
 async function buscarQuartoPorId(req, res) {
     try {
+        await atualizarHospedagensVencidas(pool);
+
         const { id } = req.params;
 
         const [quartos] = await pool.query(

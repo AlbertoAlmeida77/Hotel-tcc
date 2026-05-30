@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
 import Login from './components/Login'
 import MenuLateral from './components/MenuLateral'
+import ModalUsuarios from './components/ModalUsuarios'
 import PainelInicial from './pages/PainelInicial'
 import { descobrirPaginaPelaUrl, rotas } from './services/rotas'
+import {
+  cadastrarUsuarioGerado,
+  excluirUsuarioGerado,
+  listarUsuariosGerados,
+  usuarioPodeGerenciarUsuarios,
+} from './services/usuarios'
 import './App.css'
 
 const chaveSessao = 'hotel-api-usuario'
@@ -16,9 +23,27 @@ function App() {
   const [localizacaoAtual, setLocalizacaoAtual] = useState(() =>
     `${window.location.pathname}${window.location.search}`,
   )
+  const [modalUsuariosAberto, setModalUsuariosAberto] = useState(false)
+  const [usuariosGerados, setUsuariosGerados] = useState(() =>
+    listarUsuariosGerados(),
+  )
   const paginaAtual = descobrirPaginaPelaUrl(window.location.pathname)
+  const podeGerenciarUsuarios = usuarioPodeGerenciarUsuarios(usuarioLogado)
+  const podeVerTransacoes = podeGerenciarUsuarios
+  const paginaPermitida =
+    paginaAtual === 'transacoes' && !podeVerTransacoes ? 'painel' : paginaAtual
+  const localizacaoPermitida =
+    paginaAtual === 'transacoes' && !podeVerTransacoes
+      ? rotas.painel
+      : localizacaoAtual
 
   function navegarPara(pagina, parametros = {}) {
+    if (pagina === 'transacoes' && !podeVerTransacoes) {
+      window.history.pushState(null, '', rotas.painel)
+      setLocalizacaoAtual(`${window.location.pathname}${window.location.search}`)
+      return
+    }
+
     const novaUrl = rotas[pagina]
     const busca = new URLSearchParams()
 
@@ -48,6 +73,25 @@ function App() {
     setLocalizacaoAtual(`${window.location.pathname}${window.location.search}`)
   }
 
+  function abrirGerenciamentoUsuarios() {
+    if (!podeGerenciarUsuarios) {
+      return
+    }
+
+    setUsuariosGerados(listarUsuariosGerados())
+    setModalUsuariosAberto(true)
+  }
+
+  function criarUsuario(dadosUsuario) {
+    cadastrarUsuarioGerado(dadosUsuario)
+    setUsuariosGerados(listarUsuariosGerados())
+  }
+
+  function excluirUsuario(idUsuario) {
+    excluirUsuarioGerado(idUsuario)
+    setUsuariosGerados(listarUsuariosGerados())
+  }
+
   useEffect(() => {
     function voltarOuAvancarNoNavegador() {
       setLocalizacaoAtual(`${window.location.pathname}${window.location.search}`)
@@ -60,6 +104,12 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (usuarioLogado && paginaAtual === 'transacoes' && !podeVerTransacoes) {
+      window.history.replaceState(null, '', rotas.painel)
+    }
+  }, [paginaAtual, podeVerTransacoes, usuarioLogado])
+
   if (!usuarioLogado) {
     return <Login onEntrar={entrar} />
   }
@@ -67,17 +117,29 @@ function App() {
   return (
     <div className="layout">
       <MenuLateral
-        paginaAtual={paginaAtual}
+        paginaAtual={paginaPermitida}
+        onGerenciarUsuarios={abrirGerenciamentoUsuarios}
         onMudarPagina={navegarPara}
         onSair={sair}
+        podeGerenciarUsuarios={podeGerenciarUsuarios}
+        podeVerTransacoes={podeVerTransacoes}
         usuario={usuarioLogado}
       />
 
       <PainelInicial
-        paginaAtual={paginaAtual}
-        localizacaoAtual={localizacaoAtual}
+        paginaAtual={paginaPermitida}
+        localizacaoAtual={localizacaoPermitida}
         onMudarPagina={navegarPara}
       />
+
+      {modalUsuariosAberto && podeGerenciarUsuarios && (
+        <ModalUsuarios
+          usuarios={usuariosGerados}
+          onCriarUsuario={criarUsuario}
+          onExcluirUsuario={excluirUsuario}
+          onFechar={() => setModalUsuariosAberto(false)}
+        />
+      )}
     </div>
   )
 }

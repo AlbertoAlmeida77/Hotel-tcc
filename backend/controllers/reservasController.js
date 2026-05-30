@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const atualizarHospedagensVencidas = require("../services/atualizarHospedagensVencidas");
 
 const selectReservas = `
     SELECT
@@ -14,6 +15,8 @@ const selectReservas = `
 
 async function listarReservas(req, res) {
     try {
+        await atualizarHospedagensVencidas(pool);
+
         const { situacao, data_entrada_de, data_entrada_ate, incluir_historico } = req.query;
         const condicoes = [];
         const valores   = [];
@@ -121,6 +124,8 @@ async function cadastrarReserva(req, res) {
 
 async function buscarReservaPorId(req, res) {
     try {
+        await atualizarHospedagensVencidas(pool);
+
         const { id } = req.params;
 
         const [reservas] = await pool.query(
